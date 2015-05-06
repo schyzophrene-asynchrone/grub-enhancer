@@ -1,0 +1,20 @@
+GrubEnhancer
+============
+
+GrubEnhancer permet de "booter" sur une image ISO sans avoir besoin de graver celle-ci sur un support externe.
+
+Il édite pour cela les fichiers de configuration de GRUB selon les paramètres donnés par l'utilisateur :
+
+    - L'image ISO en question
+    - S'il faut écrire l'entrée dans le menu de GRUB de manière permanente ou pas
+    - Un fichier loopback associé à l'ISO (facultatif)
+    - Le dossier où est situé la configuration de GRUB
+    - S'il faut redémarrer l'ordi immédiatement ou pas
+
+Si l'entrée n'est pas écrite de manière permanente, GRUB bootera l'iso automatiquement au prochain redémarrage.
+
+Le fichier loopback est un fichier contenant les paramètres à passer au noyau. Il y en a un contenu dans l'image
+ISO qui sera utilisé si l'utilisateur ne précise pas de paramètres personnalisés. Il est possible de le charger
+grâce au bouton "Générer" pour pouvoir ensuite l'éditer selon ses besoins. Il est également possible d'ajouter 
+automatiquement le chargement des traductions françaises et de la disposition de clavier française, grâce à une 
+entrée dans le menu.
