@@ -18,3 +18,10 @@ ISO qui sera utilisé si l'utilisateur ne précise pas de paramètres personnali
 grâce au bouton "Générer" pour pouvoir ensuite l'éditer selon ses besoins. Il est également possible d'ajouter 
 automatiquement le chargement des traductions françaises et de la disposition de clavier française, grâce à une 
 entrée dans le menu.
+
+Dépendances
+===========
+
+Python3
+PyQt5
+Path.py : sudo pip3 install path.py
