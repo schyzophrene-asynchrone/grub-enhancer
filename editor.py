@@ -62,8 +62,9 @@ class Editor(QFrame):
         fichier = QFileDialog.getOpenFileName(self,
                                               "Sélectionner un fichier Loopback",
                                               expanduser('~'))[0]
-        content = open(fichier, 'r').read()
-        self.loopback_edit.setPlainText(content)
+        if fichier:
+            content = open(fichier, 'r').read()
+            self.loopback_edit.setPlainText(content)
     
     def gen_loopback(self):
         if self.iso_location.text() == "":

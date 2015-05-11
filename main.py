@@ -8,7 +8,7 @@ import options
 import path
 import subprocess
 from os.path import basename
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QMainWindow, QApplication,
                              QAction, qApp, QSplitter,
                              QHBoxLayout, QVBoxLayout,
@@ -45,9 +45,11 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
         # Bottom
         statusbar = self.statusBar()
-        self.progressBar = QProgressBar(statusbar)
+        self.progressBar = QProgressBar()
+        statusbar.addWidget(self.progressBar)
         self.progressBar.hide()
         self.progressBar.setMaximum(5)
+        self.progressBar.setValue(0)
         
         # Créations des Actions
         # Fichier
@@ -110,12 +112,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(window)
         self.setWindowTitle("GrubEnhancer")
         
+        # Signals
+        self.grubList.scanner.started.connect(self.progressBar.show)
+        self.grubList.scanner.max_changed.connect(self.progressBar.setMaximum)
+        self.grubList.scanner.value_changed.connect(self.progressBar.setValue)
+        self.grubList.scanner.finished.connect(self.progressBar.hide)
+        
     def valid(self):
         """Lance la procédure de mise à jour de Grub,
         après avoir vérifié que tous les paramètres
         étaient bien donnés"""
         if self.grubList.getGrubRep() and self.editeur.getIsoLocation():
             self.progressBar.show()
+            self.progressBar.setMaximum(5)
             self.progressBar.setValue(0)
             success = self._checkGrubConfig()
             self.progressBar.setValue(1)
@@ -145,7 +154,8 @@ class MainWindow(QMainWindow):
         if "41_custom" in files: return True
         else:
             custom = grub_dir / "41_custom"
-            self.custom_41.copy(custom)
+            copy = self.custom_41.copy(custom)
+            copy.chmod(0o755)
             return True
     
     def _updateGrub(self):
@@ -170,7 +180,7 @@ class MainWindow(QMainWindow):
         """Écrit le fichier loopback"""
         content = self.editeur.getLoopbackContent().strip()
         if content:
-            loopback = path.Path(self.editeur.getIsoLocation()).replace(".iso", ".loopback.cfg")
+            loopback = path.Path(self.editeur.getIsoLocation().replace(".iso", ".loopback.cfg"))
             loopback.write_text(content)
         return True
     
