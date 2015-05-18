@@ -5,7 +5,7 @@ import sys
 import tempfile
 import subprocess
 from os.path import expanduser, join
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import (QFrame, QApplication,
                              QLineEdit, QPushButton,
                              QPlainTextEdit,QHBoxLayout,
@@ -19,9 +19,12 @@ class Editor(QFrame):
         # Création des éléments
         # Top
         self.iso_location = QLineEdit()
+        self.iso_location.textChanged.connect(self.updateWarning)
         iso_choose = QPushButton("ISO")
         iso_choose.clicked.connect(self.open_iso)
         # Middle
+        self.isoWarning = QLabel()
+        self.isoWarning.setAlignment(Qt.AlignHCenter)
         label = QLabel("Fichier Loopback")
         label.setAlignment(Qt.AlignHCenter)
         self.loopback_edit = QPlainTextEdit()
@@ -44,6 +47,7 @@ class Editor(QFrame):
         # Vertical
         vbox = QVBoxLayout()
         vbox.addLayout(topbox)
+        vbox.addWidget(self.isoWarning)
         vbox.addWidget(label)
         vbox.addWidget(self.loopback_edit)
         vbox.addLayout(botbox)
@@ -51,6 +55,7 @@ class Editor(QFrame):
         # Affichage de l'interface
         self.setLayout(vbox)
     
+    @pyqtSlot()
     def open_iso(self):
         fichier = QFileDialog.getOpenFileName(self,
                                     "Sélectionner une image ISO",
@@ -58,6 +63,7 @@ class Editor(QFrame):
                                     "Image Iso (*.iso)")[0]
         self.iso_location.setText(fichier)
     
+    @pyqtSlot()
     def open_loopback(self):
         fichier = QFileDialog.getOpenFileName(self,
                                               "Sélectionner un fichier Loopback",
@@ -66,6 +72,7 @@ class Editor(QFrame):
             content = open(fichier, 'r').read()
             self.loopback_edit.setPlainText(content)
     
+    @pyqtSlot()
     def gen_loopback(self):
         if self.iso_location.text() == "":
             msg = "Il faut d'abord sélectionner une ISO avant de pouvoir générer un fichier loopback à partir de celle-ci !"
@@ -88,6 +95,7 @@ class Editor(QFrame):
                     # Nécessaire de démonter l'ISO
                     subprocess.call(["umount", mountpoint])
     
+    @pyqtSlot()
     def addFrenchTranslations(self):
         content = self.loopback_edit.toPlainText()
         content = content.split('\n')
@@ -102,6 +110,18 @@ class Editor(QFrame):
     
     def getLoopbackContent(self):
         return self.loopback_edit.toPlainText()
+    
+    @pyqtSlot()
+    def updateWarning(self):
+        if " " in self.iso_location.text():
+            self.isoWarning.setText("<font color=#FF0000>Le chemin menant à l'ISO ne peut pas contenir d'espaces !</font>")
+            toolTip = "Notez que ce message ne prend pas en compte\n"
+            toolTip += "le point de montage de la partition contenant l'ISO.\n"
+            toolTip += "Si l'espace est présent avant celui-ci,\nignorez cet avertissement."
+            self.isoWarning.setToolTip(toolTip)
+        else:
+            self.isoWarning.setText("")
+            self.isoWarning.setToolTip("")
     
 if __name__ == "__main__":
     
