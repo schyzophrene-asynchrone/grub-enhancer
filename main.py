@@ -221,14 +221,14 @@ class MainWindow(QMainWindow):
         
         if perm:
             if loopback:
-                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '" "' + loopback + '"}\n'
+                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '" "' + loopback + '"} #' + mountpoint + '\n'
             elif not loopback:
-                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '"}\n'
+                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '"} #' + mountpoint + '\n'
         else:
             if loopback:
-                config = 'amorce_iso "{}" "{}"\n'.format(iso, loopback)
+                config = 'amorce_iso "{}" "{}" #{}\n'.format(iso, loopback, mountpoint)
             elif not loopback:
-                config = 'amorce_iso "{}"\n'.format(iso)
+                config = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
             subprocess.call(['grub-editenv', '/boot/grub/grubenv', 'set', 'amorceiso=true'])
         
         # Rajout si la ligne n'existait pas déjà
