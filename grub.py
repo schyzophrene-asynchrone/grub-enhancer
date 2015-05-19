@@ -40,6 +40,7 @@ class Scanner(QThread):
     
     def run(self):
         result = self._scan(self.rep)
+        result = [file.parent for file in result]
         self.found_rep.emit(result)
     
     def _scan(self, rep, value=0):
@@ -97,12 +98,16 @@ class GrubList(QFrame):
         self.scanner.found_rep.connect(self.add_items)
         self.scanner.started.connect(self._scan_started)
         self.scanner.finished.connect(self._scan_finished)
+        
+        # Ajout de /boot/grub s'il existe
+        if path.Path("/boot/grub/grub.cfg").exists():
+            self.add_item("/boot/grub")
     
     def scan(self):
         warning = QMessageBox(self)
-        msg =  "Cette opération peut être très longue.\n"
-        msg += "Le logiciel va analyser toute votre arborescence de fichier "
-        msg += "pour chercher un éventuel dossier contenant la configuration de GRUB."
+        msg =  ("Cette opération peut être très longue.\n"
+                "Le logiciel va analyser toute votre arborescence de fichier "
+                "pour chercher un éventuel dossier contenant la configuration de GRUB.")
         warning.setText(msg)
         warning.setInformativeText("Êtes-vous sûr de vouloir continuer ?")
         warning.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
@@ -131,8 +136,13 @@ class GrubList(QFrame):
     @pyqtSlot(list)
     def add_items(self, items):
         self.grub_list.clear()
-        for file in items:
-            self.grub_list.addItem(file.parent)
+        for item in items:
+            self.grub_list.addItem(item)
+    
+    @pyqtSlot(str)
+    def add_item(self, dir):
+        item = QListWidgetItem(dir, self.grub_list)
+        self.grub_list.setCurrentItem(item)
     
     @pyqtSlot()
     def _scan_started(self):
