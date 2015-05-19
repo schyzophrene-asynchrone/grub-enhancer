@@ -4,6 +4,7 @@
 import sys
 import tempfile
 import subprocess
+import path
 from os.path import expanduser, join
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtWidgets import (QFrame, QApplication,
@@ -11,6 +12,13 @@ from PyQt5.QtWidgets import (QFrame, QApplication,
                              QPlainTextEdit,QHBoxLayout,
                              QVBoxLayout, QLabel,
                              QFileDialog, QMessageBox)
+
+def find_mount(location):
+    location = path.Path(location)
+    if location.parent.ismount() or location.parent == "/":
+        return location.parent
+    else:
+        return find_mount(location.parent)
 
 class Editor(QFrame):
     def __init__(self, parent=None):
@@ -83,9 +91,9 @@ class Editor(QFrame):
                                         self.iso_location.text(),
                                         mountpoint])
                 if mount:
-                    msg = "Il n'a pas été possible de monter l'ISO.\n"
-                    msg += "Une erreur a été rencontré pendant l'éxécution de la commande «mount».\n"
-                    msg += "Consultez la console pour plus de détails."
+                    msg = ("Il n'a pas été possible de monter l'ISO.\n"
+                            "Une erreur a été rencontré pendant l'éxécution de la commande «mount».\n"
+                            "Consultez la console pour plus de détails.")
                     QMessageBox.critical(self, "Impossible de monter l'ISO", msg)
                 else:
                     fichier = join(mountpoint, "boot/grub/loopback.cfg")
@@ -113,12 +121,10 @@ class Editor(QFrame):
     
     @pyqtSlot()
     def updateWarning(self):
-        if " " in self.iso_location.text():
+        isoPath = self.iso_location.text()
+        isoPath = isoPath.replace(find_mount(isoPath), "", 1)
+        if " " in isoPath:
             self.isoWarning.setText("<font color=#FF0000>Le chemin menant à l'ISO ne peut pas contenir d'espaces !</font>")
-            toolTip = "Notez que ce message ne prend pas en compte\n"
-            toolTip += "le point de montage de la partition contenant l'ISO.\n"
-            toolTip += "Si l'espace est présent avant celui-ci,\nignorez cet avertissement."
-            self.isoWarning.setToolTip(toolTip)
         else:
             self.isoWarning.setText("")
             self.isoWarning.setToolTip("")
