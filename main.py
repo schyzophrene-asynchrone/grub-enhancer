@@ -8,12 +8,13 @@ import options
 import path
 import subprocess
 from os.path import basename
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import (QMainWindow, QApplication,
                              QAction, qApp, QSplitter,
                              QHBoxLayout, QVBoxLayout,
                              QPushButton, QWidget, QLayout,
-                             QMessageBox, QProgressBar)
+                             QMessageBox, QProgressBar,
+                             QListWidgetItem)
 
 def find_mount(location):
     location = path.Path(location)
@@ -24,8 +25,10 @@ def find_mount(location):
 
 class MainWindow(QMainWindow):
     
+    # Fichiers 
     custom_41 = path.Path("41_custom")
     grubFonctionsFile = path.Path("fonctions_iso.cfg")
+    # Instructions
     incipit = "source ${prefix}/greffons/fonctions_iso.cfg\n"
     
     def __init__(self, parent=None):
@@ -117,6 +120,7 @@ class MainWindow(QMainWindow):
         self.grubList.scanner.max_changed.connect(self.progressBar.setMaximum)
         self.grubList.scanner.value_changed.connect(self.progressBar.setValue)
         self.grubList.scanner.finished.connect(self.progressBar.hide)
+        self.grubList.grub_list.itemActivated.connect(self.checkGrubFileSystem)
         
     def valid(self):
         """Lance la procédure de mise à jour de Grub,
@@ -240,16 +244,31 @@ class MainWindow(QMainWindow):
             subprocess.call(["shutdown", "-r", "now"])
     
     def about(self):
-        msg = "Ce programme a été créé pour vous permettre de lancer une image iso sans avoir besoin de la graver.\n\n"
-        msg += "Le script lu par Grub a été créé par Arbiel.\n"
-        msg += "La fenêtre que vous avez sous les yeux a été codée par Laërte\n\n"
-        msg += "Ce programme nécessite que vous utilisiez Grub comme chargeur d'amorçage. "
-        msg += "Si ce n'est pas le cas, consultez la liste des paquets fournis par votre distribution pour l'installer. "
-        msg += "Sans Grub, ce programme n'est d'aucune utilité."
+        msg = ("Ce programme a été créé pour vous permettre de lancer une image iso sans avoir besoin de la graver.\n\n"
+               "Le script lu par Grub a été créé par Arbiel.\n"
+               "La fenêtre que vous avez sous les yeux a été codée par Laërte\n\n"
+               "Ce programme nécessite que vous utilisiez Grub comme chargeur d'amorçage. "
+               "Si ce n'est pas le cas, consultez la liste des paquets fournis par votre distribution pour l'installer. "
+               "Sans Grub, ce programme n'est d'aucune utilité.")
         description = QMessageBox(self)
         description.setText("GrubEnhancer")
         description.setInformativeText(msg)
         description.exec_()
+    
+    @pyqtSlot(QListWidgetItem)
+    def checkGrubFileSystem(self, grub_dir):
+        grub_dir = grub_dir.text()
+        filesystem = subprocess.check_output(["grub-probe", "--target=fs", grub_dir]).decode().split()[0]
+        if filesystem in ("btrfs", "cpiofs", "newc","odc",
+                          "romfs", "squash4", "tarfs", "zfs"):
+            self.options.disablePerm(Qt.Checked)
+        else:
+            disque = subprocess.check_output(["grub-probe", "--target=disk", grub_dir]).decode().split()[0]
+            if disque.startswith(("/dev/mapper", "/dev/dm", "/dev/md")):
+                self.options.disablePerm(Qt.Checked)
+            else:
+                self.options.enablePerm(Qt.Unchecked)
+                                              
     
 if __name__ == "__main__":
     

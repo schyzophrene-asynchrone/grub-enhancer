@@ -23,15 +23,15 @@ class Options(QFrame):
         restart_nowCB.toggled.connect(self._setRestart)
         restart_laterCB.toggle()
         # Check Box
-        permanentCB = QCheckBox("Permanent", self)
-        permanentCB.stateChanged.connect(self._setPermanent)
+        self.permanentCB = QCheckBox("Permanent", self)
+        self.permanentCB.stateChanged.connect(self._setPermanent)
         
         # Layouts
         vbox = QVBoxLayout()
         vbox.addWidget(label)
         vbox.addWidget(restart_nowCB)
         vbox.addWidget(restart_laterCB)
-        vbox.addWidget(permanentCB)
+        vbox.addWidget(self.permanentCB)
         
         
         # Création des variables
@@ -57,6 +57,14 @@ class Options(QFrame):
     
     def getRestart(self):
         return self.restart_now
+    
+    def disablePerm(self, state):
+        self.permanentCB.setCheckState(state)
+        self.permanentCB.setDisabled(True)
+    
+    def enablePerm(self, state):
+        self.permanentCB.setEnabled(True)
+        self.permanentCB.setCheckState(state)
 
 if __name__ == "__main__":
     
