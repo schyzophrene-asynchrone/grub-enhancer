@@ -5,6 +5,7 @@ import sys
 import editor
 import grub
 import options
+import custom_editor
 import path
 import subprocess
 from os.path import basename
@@ -38,12 +39,15 @@ class MainWindow(QMainWindow):
         # Left
         self.grubList = grub.GrubList(self)
         self.options = options.Options(self)
-        # Right
+        # Middle
         self.editeur = editor.Editor(self)
         valid = QPushButton("Valider")
         valid.clicked.connect(self.valid)
         cancel = QPushButton("Quitter")
         cancel.clicked.connect(qApp.quit)
+        # Right
+        self.customEditeur = custom_editor.CustomEditor()
+        self.customEditeur.currentItemChanged.connect(self.updateDisplay)
         # Top
         menubar = self.menuBar()
         # Bottom
@@ -101,15 +105,21 @@ class MainWindow(QMainWindow):
         left.addWidget(self.options)
         leftW = QWidget()
         leftW.setLayout(left)
+        # Middle
+        middle = QVBoxLayout()
+        middle.addWidget(self.editeur)
+        middle.addLayout(buttons)
+        middleW = QWidget()
+        middleW.setLayout(middle)
         # Right
         right = QVBoxLayout()
-        right.addWidget(self.editeur)
-        right.addLayout(buttons)
+        right.addWidget(self.customEditeur)
         rightW = QWidget()
         rightW.setLayout(right)
         # Window
         window = QSplitter()
         window.addWidget(leftW)
+        window.addWidget(middleW)
         window.addWidget(rightW)
         
         self.setCentralWidget(window)
@@ -121,6 +131,10 @@ class MainWindow(QMainWindow):
         self.grubList.scanner.value_changed.connect(self.progressBar.setValue)
         self.grubList.scanner.finished.connect(self.progressBar.hide)
         self.grubList.grub_list.itemActivated.connect(self.checkGrubFileSystem)
+        self.grubList.grub_list.itemActivated.connect(self.customEditeur.setGrubRep)
+        self.editeur.iso_location.textChanged.connect(self.customEditeur.setIsoLocation)
+        self.editeur.textChanged.connect(self.customEditeur.setLoopbackContent)
+        self.options.permanentCB.stateChanged.connect(self.customEditeur.setPermanent)
         
     def valid(self):
         """Lance la procédure de mise à jour de Grub,
@@ -143,7 +157,6 @@ class MainWindow(QMainWindow):
             msg = "La configuration de Grub a bien été mise à jour."
             if self.options.getRestart(): msg += "\nL'ordinateur va maintenant redémarrer."
             QMessageBox.information(self, "Mise à jour effectuée", msg)
-            self._restart()
             self.progressBar.reset()
             self.progressBar.hide()
         else:
@@ -238,11 +251,6 @@ class MainWindow(QMainWindow):
         
         return True
     
-    def _restart(self):
-        """Redémarre si voulu"""
-        if self.options.getRestart():
-            subprocess.call(["shutdown", "-r", "now"])
-    
     def about(self):
         msg = ("Ce programme a été créé pour vous permettre de lancer une image iso sans avoir besoin de la graver.\n\n"
                "Le script lu par Grub a été créé par Arbiel.\n"
@@ -268,7 +276,20 @@ class MainWindow(QMainWindow):
                 self.options.disablePerm(Qt.Checked)
             else:
                 self.options.enablePerm(Qt.Unchecked)
-                                              
+    
+    @pyqtSlot(custom_editor.CustomEntry)
+    def updateDisplay(self, item):
+        mountpoint = item.getMountPoint()
+        isoLocation = path.Path(mountpoint) / item.getIsoLocation()
+        loopbackContent = item.getLoopbackContent()
+        permanent = item.getPermanent()
+        self.editeur.loopback_edit.setPlainText(loopbackContent)
+        self.editeur.iso_location.setText(isoLocation)
+        if permanent:
+            self.options.permanentCB.setCheckState(Qt.Checked)
+        else:
+            self.options.permanentCB.setCheckState(Qt.Unchecked)
+    
     
 if __name__ == "__main__":
     
