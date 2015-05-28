@@ -6,7 +6,7 @@ import tempfile
 import subprocess
 import path
 from os.path import expanduser, join
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (QFrame, QApplication,
                              QLineEdit, QPushButton,
                              QPlainTextEdit,QHBoxLayout,
@@ -21,6 +21,9 @@ def find_mount(location):
         return find_mount(location.parent)
 
 class Editor(QFrame):
+    
+    textChanged = pyqtSignal(str)
+    
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
         
@@ -36,6 +39,7 @@ class Editor(QFrame):
         label = QLabel("Fichier Loopback")
         label.setAlignment(Qt.AlignHCenter)
         self.loopback_edit = QPlainTextEdit()
+        self.loopback_edit.textChanged.connect(self.emitChangedText)
         # Bottom
         loopback_choose = QPushButton("Ouvrir")
         loopback_gen = QPushButton("Générer")
@@ -128,6 +132,10 @@ class Editor(QFrame):
         else:
             self.isoWarning.setText("")
             self.isoWarning.setToolTip("")
+    
+    @pyqtSlot()
+    def emitChangedText(self):
+        self.textChanged.emit(self.loopback_edit.toPlainText())
     
 if __name__ == "__main__":
     
