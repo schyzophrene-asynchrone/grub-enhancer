@@ -77,7 +77,7 @@ class GrubList(QFrame):
         self.scanButton = QPushButton("Scanner")
         self.add = QPushButton("Ajouter")
         self.scanButton.clicked.connect(self.scan)
-        self.add.clicked.connect(self.add_item)
+        self.add.clicked.connect(self.openSelectionDialog)
         self.scanButton.setToolTip("Cette opération peut être <b>très</b> longue !")
         
         # Création des Layouts
@@ -117,12 +117,11 @@ class GrubList(QFrame):
         if answer == QMessageBox.Yes:
             self.scanner.start()
     
-    def add_item(self):
+    def openSelectionDialog(self):
         dir = QFileDialog.getExistingDirectory(self,
                                                "Sélectionner un répertoire GRUB",
                                                expanduser('~'))
-        item = QListWidgetItem(dir, self.grub_list)
-        self.grub_list.setCurrentItem(item)
+        self.add_item(dir)
     
     def getGrubRep(self):
         dir = self.grub_list.selectedItems()
