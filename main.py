@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
     incipit = "source ${prefix}/greffons/fonctions_iso.cfg\n"
     include_custom = [( "if [ -f  \${config_directory}/custom.cfg ]; then\n"
                         "source \${config_directory}/custom.cfg\n"
-                        "elif [ -z "\${config_directory}" -a -f  \$prefix/custom.cfg ]; then\n"
+                        'elif [ -z "\${config_directory}" -a -f  \$prefix/custom.cfg ]; then\n'
                         "source \$prefix/custom.cfg;\n"
                         "fi\n")]
     
