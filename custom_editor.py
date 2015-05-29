@@ -3,6 +3,7 @@
 
 import sys
 import path
+import shlex
 from os.path import basename
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor
@@ -118,32 +119,31 @@ class CustomEditor(QFrame):
                 items = []
                 customContent = (self.grubRep / "custom.cfg").lines()
                 for line in customContent:
-                    if "iso_boot" in line or "amorce_iso" in line:
-                        if "iso_boot" in line:
-                            permanent = True
-                            name = line.split()[1][1:-1] # On vire les guillemets
-                            isoLocation = line.split()[3].replace("}", "")[1:-1] #Virer l'accolade avant les guillemets !
-                            try:
-                                if line.split()[4][0] == '"':
-                                    loopbackLocation = line.split()[4].replace("}", "")[1:-1]
-                                else:
-                                    loopbackLocation = None # Ne pas oublier d'instancier la variable
-                            except IndexError:
-                                loopbackLocation = None
+                    instruction = False
+                    if "iso_boot" in line:
+                        line = shlex.split(line)
+                        permanent = True
+                        name = line[1]
+                        isoLocation = line[3].replace("}", "") # Virer les accolades de la fin (s'il y en a)
+                        if len(line) == 6:
+                            loopbackLocation = line[4][:-1] # Idem, mais on est sûr qu'il y en a
                         else:
-                            permanent = False
-                            isoLocation = line.split()[1][1:-1]
-                            name = isoLocation.split("/")[-1]
-                            try:
-                                if line.split()[2][0] == '"':
-                                    loopbackLocation = line.split()[2][1:-1]
-                                else:
-                                    loopbackLocation = None
-                            except IndexError:
-                                loopbackLocation = None
-                        mountpoint = line.split()[-1][1:]
+                            loopbackLocation = None # Ne pas oublier d'instancier la variable
+                        instruction = True
+                    elif "amorce_iso" in line:
+                        line = shlex.split(line)
+                        permanent = False
+                        isoLocation = line[1]
+                        name = basename(isoLocation)
+                        if len(line) == 4:
+                            loopbackLocation = line[2]
+                        else:
+                            loopbackLocation = None
+                        instruction = True
+                    if instruction:
+                        mountpoint = line[-1][1:]
                         entry = CustomEntry(self.CustomEntriesList, name, isoLocation, permanent, loopbackLocation, mountpoint)
-                        self.addEntriesToCache()
+                    self.addEntriesToCache()
             else:
                 self.addNewItem()
                 self.addEntriesToCache()
