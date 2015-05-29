@@ -185,20 +185,23 @@ class CustomEditor(QFrame):
     
     @pyqtSlot(Qt.CheckState)
     def setPermanent(self, permanent):
+        print("changed permanent :", end=" ")
         current = self.CustomEntriesList.currentItem()
         if permanent == Qt.Checked:
             current.setPermanent(True)
+            print(True)
         else:
             current.setPermanent(False)
+            print(False)
     
     def addEntriesToCache(self):
         items = [self.CustomEntriesList.item(i) for i in range(self.CustomEntriesList.count())]
         self.cache[self.grubRep] = items
     
     def emitSignal(self, current, previous):
-        print(current)
         if current == None: pass
         else:
+            print(current.text())
             self.currentItemChanged.emit(current)
     
     def getCurrent(self):
