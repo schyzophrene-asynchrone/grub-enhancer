@@ -78,9 +78,12 @@ class MainWindow(QMainWindow):
         scan = QAction("Scanner", self)
         scan.setStatusTip("Peut être long")
         scan.triggered.connect(self.grubList.scan)
+        add_custom = QAction("Ajouter les entrées custom à la configuration de GRUB", self)
+        add_custom.triggered.connect(self.checkGrubConfig)
         grubMenu = menubar.addMenu("Grub")
         grubMenu.addAction(openDir)
         grubMenu.addAction(scan)
+        grubMenu.addAction(add_custom)
         # Loopback
         genLoop = QAction("Générer le fichier Loopback", self)
         genLoop.triggered.connect(self.editeur.gen_loopback)
@@ -154,7 +157,7 @@ class MainWindow(QMainWindow):
             msg = "Vous devez préciser au moins une ISO et un répertoire GRUB !"
             QMessageBox.critical(self, "Paramètres manquants", msg)
         
-    def _checkGrubConfig(self):
+    def checkGrubConfig(self):
         """Vérifie la présence du fichier «41_custom» dans le
         répertoire "/etc/grub.d". Le crée sinon."""
         grub_dir = path.Path("/etc/grub.d/")
