@@ -124,6 +124,7 @@ class MainWindow(QMainWindow):
         
         self.setCentralWidget(window)
         self.setWindowTitle("GrubEnhancer")
+        self.updateDisplay(self.customEditeur.getCurrent())
         
         # Signals
         self.grubList.scanner.started.connect(self.progressBar.show)

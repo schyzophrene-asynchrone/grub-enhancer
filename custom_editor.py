@@ -112,6 +112,7 @@ class CustomEditor(QFrame):
         if self.grubRep in self.cache:
             for entry in self.cache[self.grubRep]:
                 self.CustomEntriesList.addItem(entry)
+            print("Loaded")
         else:
             if (self.grubRep / "custom.cfg").exists():
                 items = []
@@ -146,7 +147,7 @@ class CustomEditor(QFrame):
             else:
                 self.addNewItem()
                 self.addEntriesToCache()
-            self.CustomEntriesList.setCurrentRow(0)
+        self.CustomEntriesList.setCurrentRow(0)
         
         
     
@@ -195,8 +196,13 @@ class CustomEditor(QFrame):
         self.cache[self.grubRep] = items
     
     def emitSignal(self, current, previous):
-        print(current.text())
-        self.currentItemChanged.emit(current)
+        print(current)
+        if current == None: pass
+        else:
+            self.currentItemChanged.emit(current)
+    
+    def getCurrent(self):
+        return self.CustomEntriesList.currentItem()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
