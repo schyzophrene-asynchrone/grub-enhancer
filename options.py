@@ -48,9 +48,8 @@ class Options(QFrame):
         self.permanentCB.setCheckState(state)
         self.permanentCB.setDisabled(True)
     
-    def enablePerm(self, state):
+    def enablePerm(self):
         self.permanentCB.setEnabled(True)
-        self.permanentCB.setCheckState(state)
 
 if __name__ == "__main__":
     

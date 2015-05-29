@@ -276,7 +276,7 @@ class MainWindow(QMainWindow):
             if disque.startswith(("/dev/mapper", "/dev/dm", "/dev/md")):
                 self.options.disablePerm(Qt.Checked)
             else:
-                self.options.enablePerm(Qt.Unchecked)
+                self.options.enablePerm()
     
     @pyqtSlot(custom_editor.CustomEntry)
     def updateDisplay(self, item):
