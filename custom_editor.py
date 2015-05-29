@@ -146,6 +146,7 @@ class CustomEditor(QFrame):
             else:
                 self.addNewItem()
                 self.addEntriesToCache()
+            self.CustomEntriesList.setCurrentRow(0)
         
         
     
