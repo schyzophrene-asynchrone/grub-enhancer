@@ -148,6 +148,9 @@ class MainWindow(QMainWindow):
             self._updateCustom()
             self.progressBar.setValue(5)
             msg = "La configuration de Grub a bien été mise à jour."
+            if self.options.getPermanent(): msg += ("\nLes entrées ajoutées au menu GRUB pourraient disparaître lors de la prochaine"
+                                                    " mise à jour du noyau ou de GRUB. Si c'est le cas, utilisez le bouton"
+                                                    "«Ajouter les entrées custom à la configuration de GRUB» pour les rendre permanentes")
             if self.options.getRestart(): msg += "\nL'ordinateur va maintenant redémarrer."
             QMessageBox.information(self, "Mise à jour effectuée", msg)
             self._restart()
