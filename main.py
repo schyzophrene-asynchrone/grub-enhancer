@@ -174,8 +174,8 @@ class MainWindow(QMainWindow):
                 # Création du Loopback
                 print(iso_location, loopback_location, mountpoint, sep=" : ")
                 if loopback_content:
-                    loopback_location = path.Path(mountpoint) / loopback_location[1:] # On vire toujours le premier /
-                    loopback_location.write_text(loopback_content)
+                    full_loopback_location = path.Path(mountpoint) / loopback_location[1:] # On vire toujours le premier /
+                    full_loopback_location.write_text(loopback_content)
                 # Création d'une ligne du Custom
                 if permanent:
                     if loopback_content:
