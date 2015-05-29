@@ -161,8 +161,8 @@ class CustomEditor(QFrame):
         item = self.CustomEntriesList.takeItem(current)
         self.cache[self.grubRep].remove(item)
     
-    @pyqtSlot(QListWidgetItem)
-    def setGrubRep(self, grubRep):
+    @pyqtSlot(QListWidgetItem, QListWidgetItem)
+    def setGrubRep(self, grubRep, prevGrubRep):
         self.grubRep = path.Path(grubRep.text())
         for i in range(self.CustomEntriesList.count()):
             self.CustomEntriesList.takeItem(0)
