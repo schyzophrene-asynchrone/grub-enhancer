@@ -207,6 +207,9 @@ class CustomEditor(QFrame):
     def getCurrent(self):
         return self.CustomEntriesList.currentItem()
 
+    def getCache(self):
+        return self.cache
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     

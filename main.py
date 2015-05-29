@@ -31,6 +31,11 @@ class MainWindow(QMainWindow):
     grubFonctionsFile = path.Path("fonctions_iso.cfg")
     # Instructions
     incipit = "source ${prefix}/greffons/fonctions_iso.cfg\n"
+    grubConf = ("if [ -f  \${config_directory}/custom.cfg ]; then\n"
+                "source \${config_directory}/custom.cfg\n"
+                'elif [ -z "\${config_directory}" -a -f  \$prefix/custom.cfg ]; then\n'
+                "source \$prefix/custom.cfg;\n"
+                "fi\n")
     
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -141,116 +146,46 @@ class MainWindow(QMainWindow):
         """Lance la procédure de mise à jour de Grub,
         après avoir vérifié que tous les paramètres
         étaient bien donnés"""
-        if self.grubList.getGrubRep() and self.editeur.getIsoLocation():
-            self.progressBar.show()
-            self.progressBar.setMaximum(5)
-            self.progressBar.setValue(0)
-            success = self._checkGrubConfig()
-            self.progressBar.setValue(1)
-            success = self._updateGrub()
-            self.progressBar.setValue(2)
-            succes = self._writeFunction()
-            self.progressBar.setValue(3)
-            succes = self._writeLoopback()
-            self.progressBar.setValue(4)
-            succes = self._updateCustom()
-            self.progressBar.setValue(5)
-            msg = "La configuration de Grub a bien été mise à jour."
-            if self.options.getRestart(): msg += "\nL'ordinateur va maintenant redémarrer."
-            QMessageBox.information(self, "Mise à jour effectuée", msg)
-            self.progressBar.reset()
-            self.progressBar.hide()
-        else:
-            msg = "Vous devez préciser au moins une ISO et un répertoire GRUB !"
-            QMessageBox.critical(self, "Paramètres manquants", msg)
-        
-    def _checkGrubConfig(self, rep="/etc/grub.d/"):
-        """Vérifie la présence du fichier «41_custom» dans le
-        répertoire "/etc/grub.d". Le crée sinon."""
-        grub_dir = path.Path(rep)
-        files = grub_dir.files()
-        if "41_custom" in files: return True
-        else:
-            custom = grub_dir / "41_custom"
-            copy = self.custom_41.copy(custom)
-            copy.chmod(0o755)
-            return True
-    
-    def _updateGrub(self):
-        """Met à jour la configuration de grub"""
-        grub_dir = path.Path(self.grubList.getGrubRep())
-        config_file = grub_dir / "grub.cfg"
-        subprocess.call(["grub-mkconfig", "-o", config_file])
-        return True
-    
-    def _writeFunction(self):
-        """Écrit les fonctions nécessaires au démarrage
-        sur iso dans le répertoire grub. Les fonctions sont
-        lues à partir de «file»"""
-        grub_dir = path.Path(self.grubList.getGrubRep())
-        try:
-            grub_dir.joinpath("greffons").mkdir()
-        except OSError: pass # Le répertoire existe déjà
-        self.grubFonctionsFile.copy(grub_dir / "greffons/fonctions_iso.cfg")
-        return True
-    
-    def _writeLoopback(self):
-        """Écrit le fichier loopback"""
-        content = self.editeur.getLoopbackContent().strip()
-        if content:
-            loopback = path.Path(self.editeur.getIsoLocation().replace(".iso", ".loopback.cfg"))
-            loopback.write_text(content)
-        return True
-    
-    def _updateCustom(self):
-        """Modifie le fichier contenant les entrées du menu"""
-        grub_dir = path.Path(self.grubList.getGrubRep())
-        custom = grub_dir / "custom.cfg"
-        try: custom_content = custom.lines(encoding="utf-8")
-        except OSError: custom_content = []
-
-        # Rajout de l'incipit
-        if self.incipit not in custom_content:
-            custom_content[:0] = [self.incipit]
-
-        # Suppression des instructions «amorce_iso»
-        for line in custom_content:
-            if "amorce_iso" in line:
-                custom_content.remove(line)
-
-        # Calcul des chemins depuis la racine de la partition
-        iso = path.Path(self.editeur.getIsoLocation())
-        mountpoint = find_mount(iso)
-        iso = iso.replace(mountpoint, "", 1)
-        if self.editeur.getLoopbackContent().strip():
-            loopback = iso.replace(".iso", ".loopback.cfg")
-        else:
-            loopback = None
-
-        # Obtention du nom de l'iso
-        iso_name = basename(iso)
-        
-        # Obtention des variables
-        perm = self.options.getPermanent()
-        
-        if perm:
-            if loopback:
-                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '" "' + loopback + '"} #' + mountpoint + '\n'
-            elif not loopback:
-                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '"} #' + mountpoint + '\n'
-        else:
-            if loopback:
-                config = 'amorce_iso "{}" "{}" #{}\n'.format(iso, loopback, mountpoint)
-            elif not loopback:
-                config = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
-            subprocess.call(['grub-editenv', '/boot/grub/grubenv', 'set', 'amorceiso=true'])
-        
-        # Rajout si la ligne n'existait pas déjà
-        if config not in custom_content: custom_content.append(config)
-        custom_content = "".join(custom_content)
-        custom.write_text(custom_content)
-        
-        return True
+        cache = self.customEditeur.getCache()
+        for grubRep, entries in cache.items:
+            grubRep = path.Path(grubRep)
+            # Mise à jour de la config de GRUB
+            grub_config_file = grubRep / "grub.cfg"
+            if self.grubConf not in grub_config_file:
+                grub_config_file.append("### BEGIN GrubEnhancer Config ###\n" + self.grubConf + "### END GrubEnhancer Config ###\n")
+            # Écriture des fonctions GRUB
+            greffons = grubRep / "greffons"
+            if not greffons.isdir():
+                greffons.mkdir()
+            fonctionsFile = greffons / "fonctions_iso.cfg"
+            self.grubFonctionsFile.copy(fonctionsFile)
+            # Création des Loopback et du Custom
+            custom_content = [incipit]
+            for entry in entries:
+                # Récupération des paramètres
+                name = entry.getText()
+                iso_location = entry.getIsoLocation()
+                loopback_content = entry.getLoopbackContent()
+                loopback_location = iso_location.replace('.iso', '.loopback.cfg')
+                mountpoint = entry.getMountPoint()
+                permanent = entry.getPermanent()
+                # Création du Loopback
+                if loopback_content:
+                    loopback_location = path.Path(mountpoint) / loopback_location
+                    loopback_location.write(loopback_content)
+                # Création d'une ligne du Custom
+                if permanent:
+                    if loopback_content:
+                        custom_line = '\tsubmenu "' + name + '" {iso_boot "' + iso_location + '" "' + loopback_location + '"} #' + mountpoint + '\n'
+                    else:
+                        custom_line = '\tsubmenu "' + name + '" {iso_boot "' + iso_location + '"} #' + mountpoint + '\n'
+                else:
+                    if loopback_content:
+                        custom_line = 'amorce_iso "{}" "{}" #{}\n'.format(iso, loopback, mountpoint)
+                    else:
+                        custom_line = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
+                    subprocess.call(['grub-editenv', grubRep + '/grubenv', 'set', 'amorceiso=true'])
+                custom_content.append(custom_line)
     
     def about(self):
         msg = ("Ce programme a été créé pour vous permettre de lancer une image iso sans avoir besoin de la graver.\n\n"
