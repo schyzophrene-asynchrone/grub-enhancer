@@ -30,6 +30,11 @@ class MainWindow(QMainWindow):
     grubFonctionsFile = path.Path("fonctions_iso.cfg")
     # Instructions
     incipit = "source ${prefix}/greffons/fonctions_iso.cfg\n"
+    include_custom = [( "if [ -f  \${config_directory}/custom.cfg ]; then\n"
+                        "source \${config_directory}/custom.cfg\n"
+                        "elif [ -z "\${config_directory}" -a -f  \$prefix/custom.cfg ]; then\n"
+                        "source \$prefix/custom.cfg;\n"
+                        "fi\n")]
     
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -130,15 +135,14 @@ class MainWindow(QMainWindow):
             self.progressBar.show()
             self.progressBar.setMaximum(5)
             self.progressBar.setValue(0)
-            success = self._checkGrubConfig()
             self.progressBar.setValue(1)
-            success = self._updateGrub()
+            self._updateGrub()
             self.progressBar.setValue(2)
-            succes = self._writeFunction()
+            self._writeFunction()
             self.progressBar.setValue(3)
-            succes = self._writeLoopback()
+            self._writeLoopback()
             self.progressBar.setValue(4)
-            succes = self._updateCustom()
+            self._updateCustom()
             self.progressBar.setValue(5)
             msg = "La configuration de Grub a bien été mise à jour."
             if self.options.getRestart(): msg += "\nL'ordinateur va maintenant redémarrer."
@@ -150,10 +154,10 @@ class MainWindow(QMainWindow):
             msg = "Vous devez préciser au moins une ISO et un répertoire GRUB !"
             QMessageBox.critical(self, "Paramètres manquants", msg)
         
-    def _checkGrubConfig(self, rep="/etc/grub.d/"):
+    def _checkGrubConfig(self):
         """Vérifie la présence du fichier «41_custom» dans le
         répertoire "/etc/grub.d". Le crée sinon."""
-        grub_dir = path.Path(rep)
+        grub_dir = path.Path("/etc/grub.d/")
         files = grub_dir.files()
         if "41_custom" in files: return True
         else:
@@ -166,8 +170,11 @@ class MainWindow(QMainWindow):
         """Met à jour la configuration de grub"""
         grub_dir = path.Path(self.grubList.getGrubRep())
         config_file = grub_dir / "grub.cfg"
-        subprocess.call(["grub-mkconfig", "-o", config_file])
-        return True
+        if self.include_custom in config_file.text():
+            pass
+        else:
+            text = "### BEGIN GrubEnhancer Config ###\n" + self.include_custom + "### END GrubEnhancer Config ###\n"
+            config_file.append(text)
     
     def _writeFunction(self):
         """Écrit les fonctions nécessaires au démarrage
