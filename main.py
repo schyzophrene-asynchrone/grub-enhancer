@@ -147,12 +147,12 @@ class MainWindow(QMainWindow):
         après avoir vérifié que tous les paramètres
         étaient bien donnés"""
         cache = self.customEditeur.getCache()
-        for grubRep, entries in cache.items:
+        for grubRep, entries in cache.items():
             grubRep = path.Path(grubRep)
             # Mise à jour de la config de GRUB
             grub_config_file = grubRep / "grub.cfg"
             if self.grubConf not in grub_config_file:
-                grub_config_file.append("### BEGIN GrubEnhancer Config ###\n" + self.grubConf + "### END GrubEnhancer Config ###\n")
+                grub_config_file.write_text("### BEGIN GrubEnhancer Config ###\n" + self.grubConf + "### END GrubEnhancer Config ###\n", append=True)
             # Écriture des fonctions GRUB
             greffons = grubRep / "greffons"
             if not greffons.isdir():
@@ -160,19 +160,22 @@ class MainWindow(QMainWindow):
             fonctionsFile = greffons / "fonctions_iso.cfg"
             self.grubFonctionsFile.copy(fonctionsFile)
             # Création des Loopback et du Custom
-            custom_content = [incipit]
+            custom = grubRep / "custom.cfg"
+            custom_content = [self.incipit]
             for entry in entries:
                 # Récupération des paramètres
-                name = entry.getText()
+                name = entry.text()
                 iso_location = entry.getIsoLocation()
+                print(iso_location)
                 loopback_content = entry.getLoopbackContent()
                 loopback_location = iso_location.replace('.iso', '.loopback.cfg')
                 mountpoint = entry.getMountPoint()
                 permanent = entry.getPermanent()
                 # Création du Loopback
+                print(iso_location, loopback_location, mountpoint, sep=" : ")
                 if loopback_content:
-                    loopback_location = path.Path(mountpoint) / loopback_location
-                    loopback_location.write(loopback_content)
+                    loopback_location = path.Path(mountpoint) / loopback_location[1:] # On vire toujours le premier /
+                    loopback_location.write_text(loopback_content)
                 # Création d'une ligne du Custom
                 if permanent:
                     if loopback_content:
@@ -186,6 +189,14 @@ class MainWindow(QMainWindow):
                         custom_line = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
                     subprocess.call(['grub-editenv', grubRep + '/grubenv', 'set', 'amorceiso=true'])
                 custom_content.append(custom_line)
+            # Création du Custom
+            custom.write_lines(custom_content)
+        # Affichage d'un message de confirmation
+        msg = "Vos modifications ont bien été prises en compte."
+        info = QMessageBox(self)
+        info.setWindowTitle("GrubEnhancer")
+        info.setText(msg)
+        info.exec_()
     
     def about(self):
         msg = ("Ce programme a été créé pour vous permettre de lancer une image iso sans avoir besoin de la graver.\n\n"
@@ -216,7 +227,7 @@ class MainWindow(QMainWindow):
     @pyqtSlot(custom_editor.CustomEntry)
     def updateDisplay(self, item):
         mountpoint = item.getMountPoint()
-        isoLocation = path.Path(mountpoint) / item.getIsoLocation()
+        isoLocation = path.Path(mountpoint) / item.getIsoLocation()[1:]
         loopbackContent = item.getLoopbackContent()
         permanent = item.getPermanent()
         self.editeur.loopback_edit.setPlainText(loopbackContent)
