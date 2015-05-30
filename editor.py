@@ -5,7 +5,7 @@ import sys
 import tempfile
 import subprocess
 import path
-from os.path import expanduser, join
+from os.path import expanduser, join, exists
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (QFrame, QApplication,
                              QLineEdit, QPushButton,
@@ -101,8 +101,13 @@ class Editor(QFrame):
                     QMessageBox.critical(self, "Impossible de monter l'ISO", msg)
                 else:
                     fichier = join(mountpoint, "boot/grub/loopback.cfg")
-                    content = open(fichier, 'r').read()
-                    self.loopback_edit.setPlainText(content)
+                    if exists(fichier):
+                        content = open(fichier, 'r').read()
+                        self.loopback_edit.setPlainText(content)
+                    else:
+                        msg = ("L'iso sélectionnée ne contient pas de fichier loopback.\n"
+                               "Il n'est donc pas possible d'en générer un, il faut le créer manuellement.")
+                        QMessageBox.information(self, "ISO non valable", msg)
                     
                     # Nécessaire de démonter l'ISO
                     subprocess.call(["umount", mountpoint])
