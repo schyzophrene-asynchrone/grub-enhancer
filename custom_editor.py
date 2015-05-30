@@ -142,9 +142,9 @@ class CustomEditor(QFrame):
                     if instruction:
                         mountpoint = line[-1][1:]
                         entry = CustomEntry(self.CustomEntriesList, name, isoLocation, permanent, loopbackLocation, mountpoint)
-                    if self.CustomEntriesList.count() == 0:
-                        self.addNewItem()
-                    self.addEntriesToCache()
+                if self.CustomEntriesList.count() == 0:
+                    self.addNewItem()
+                self.addEntriesToCache()
             else:
                 self.addNewItem()
                 self.addEntriesToCache()
