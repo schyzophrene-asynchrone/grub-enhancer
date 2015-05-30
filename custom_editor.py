@@ -116,7 +116,6 @@ class CustomEditor(QFrame):
             print("Loaded")
         else:
             if (self.grubRep / "custom.cfg").exists():
-                items = []
                 customContent = (self.grubRep / "custom.cfg").lines()
                 for line in customContent:
                     instruction = False
@@ -143,6 +142,8 @@ class CustomEditor(QFrame):
                     if instruction:
                         mountpoint = line[-1][1:]
                         entry = CustomEntry(self.CustomEntriesList, name, isoLocation, permanent, loopbackLocation, mountpoint)
+                    if self.CustomEntriesList.count() == 0:
+                        self.addNewItem()
                     self.addEntriesToCache()
             else:
                 self.addNewItem()

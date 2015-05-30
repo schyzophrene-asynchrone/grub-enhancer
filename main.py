@@ -226,17 +226,16 @@ class MainWindow(QMainWindow):
     
     @pyqtSlot(custom_editor.CustomEntry)
     def updateDisplay(self, item):
-        if type(item) == custom_editor.CustomEntry:
-            mountpoint = item.getMountPoint()
-            isoLocation = path.Path(mountpoint) / item.getIsoLocation()[1:]
-            loopbackContent = item.getLoopbackContent()
-            permanent = item.getPermanent()
-            self.editeur.loopback_edit.setPlainText(loopbackContent)
-            self.editeur.iso_location.setText(isoLocation)
-            if permanent:
-                self.options.permanentCB.setCheckState(Qt.Checked)
-            else:
-                self.options.permanentCB.setCheckState(Qt.Unchecked)
+        mountpoint = item.getMountPoint()
+        isoLocation = path.Path(mountpoint) / item.getIsoLocation()[1:]
+        loopbackContent = item.getLoopbackContent()
+        permanent = item.getPermanent()
+        self.editeur.loopback_edit.setPlainText(loopbackContent)
+        self.editeur.iso_location.setText(isoLocation)
+        if permanent:
+            self.options.permanentCB.setCheckState(Qt.Checked)
+        else:
+            self.options.permanentCB.setCheckState(Qt.Unchecked)
     
     
 if __name__ == "__main__":
