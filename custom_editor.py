@@ -156,7 +156,7 @@ class CustomEditor(QFrame):
         name = "<New>"
         entry = CustomEntry(self.CustomEntriesList, name, permanent=permanent)
         self.CustomEntriesList.setCurrentItem(entry)
-        self.cache[self.grubRep].append(entry)
+        self.addEntriesToCache()
     
     def removeCurrentItem(self):
         current = self.CustomEntriesList.currentRow()
