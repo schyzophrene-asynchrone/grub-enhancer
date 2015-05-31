@@ -8,7 +8,7 @@ import options
 import custom_editor
 import path
 import subprocess
-from os.path import basename
+from os.path import basename, exists, join
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import (QMainWindow, QApplication,
                              QAction, qApp, QSplitter,
@@ -230,12 +230,25 @@ class MainWindow(QMainWindow):
         isoLocation = path.Path(mountpoint) / item.getIsoLocation()[1:]
         loopbackContent = item.getLoopbackContent()
         permanent = item.getPermanent()
+        enabled = item.getEnabled()
         self.editeur.loopback_edit.setPlainText(loopbackContent)
         self.editeur.iso_location.setText(isoLocation)
         if permanent:
             self.options.permanentCB.setCheckState(Qt.Checked)
         else:
             self.options.permanentCB.setCheckState(Qt.Unchecked)
+        if exists(isoLocation):
+            enabled = True
+            item.setEnabled(True)
+        else:
+            enabled = False
+            item.setEnabled(False)
+        if not enabled:
+            self.options.setDisabled(True)
+            self.editeur.setDisabled(True)
+        else:
+            self.options.setEnabled(True)
+            self.editeur.setEnabled(True)
     
     
 if __name__ == "__main__":

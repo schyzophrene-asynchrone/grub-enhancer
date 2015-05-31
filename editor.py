@@ -143,6 +143,8 @@ class Editor(QFrame):
         isoPath = isoPath.replace(find_mount(isoPath), "", 1)
         if " " in isoPath:
             self.isoWarning.setText("<font color=#FF0000>Le chemin menant à l'ISO ne peut pas contenir d'espaces !</font>")
+        elif not exists(self.iso_location.text()) :
+            self.isoWarning.setText("<font color=#FF0000>L'iso sélectionnée n'existe pas.\nLa partition sur laquelle elle se trouve est probablement démontée.</font>")
         else:
             self.isoWarning.setText("")
             self.isoWarning.setToolTip("")

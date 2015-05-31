@@ -4,7 +4,7 @@
 import sys
 import path
 import shlex
-from os.path import basename
+from os.path import basename, join, exists
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import (QFrame, QListWidget,
@@ -21,18 +21,24 @@ def find_mount(location):
 
 class CustomEntry(QListWidgetItem):
     """Un widget représentant une entrée custom"""
-    def __init__(self, parent=0, name="", isoLocation="", permanent=True, loopbackLocation="", mountpoint="/"):
+    def __init__(self, parent=0, name="", isoLocation="", permanent=True, loopbackLocation="", mountpoint="/", enabled=True):
         QListWidgetItem.__init__(self, parent)
         self.setText(name)
         self.isoLocation = isoLocation
-        if loopbackLocation:
+        self.loopbackLocation = loopbackLocation
+        if loopbackLocation and enabled:
             loopbackLocation = path.Path(mountpoint) / loopbackLocation[1:] # On vire le premier "/"
             self.loopbackContent = loopbackLocation.text()
-        else: self.loopbackContent = ""
+        else:
+            self.loopbackContent = ""
         self.permanent = permanent
         self.mountpoint = mountpoint
+        self.enabled = enabled
         if not permanent:
             brush = QBrush(QColor(255, 0, 0))
+            self.setForeground(brush)
+        if not enabled:
+            brush = QBrush(QColor(255, 128, 0))
             self.setForeground(brush)
     
     def setIsoLocation(self, isoLocation):
@@ -54,6 +60,19 @@ class CustomEntry(QListWidgetItem):
     def setMountPoint(self, mountpoint):
         self.mountpoint = mountpoint
     
+    def setEnabled(self, enabled):
+        self.enabled = enabled
+        if enabled:
+            brush = QBrush(Qt.ForegroundRole)
+            self.setForeground(brush)
+        else:
+            brush = QBrush(QColor(255, 128, 0))
+            self.setForeground(brush)
+        if enabled and self.loopbackLocation and not self.loopbackContent:
+            loopbackLocation = path.Path(self.mountpoint) / self.loopbackLocation[1:]
+            self.loopbackContent = loopbackLocation.text()
+        
+    
     def getIsoLocation(self):
         return self.isoLocation
     
@@ -65,6 +84,9 @@ class CustomEntry(QListWidgetItem):
     
     def getMountPoint(self):
         return self.mountpoint
+    
+    def getEnabled(self):
+        return self.enabled
 
 class CustomEditor(QFrame):
     """Classe permettant de modifier le fichier custom"""
@@ -141,7 +163,11 @@ class CustomEditor(QFrame):
                         instruction = True
                     if instruction:
                         mountpoint = line[-1][1:]
-                        entry = CustomEntry(self.CustomEntriesList, name, isoLocation, permanent, loopbackLocation, mountpoint)
+                        if not exists(join(mountpoint, isoLocation[1:])):
+                            enabled = False
+                        else:
+                            enabled = True
+                        entry = CustomEntry(self.CustomEntriesList, name, isoLocation, permanent, loopbackLocation, mountpoint, enabled)
                 if self.CustomEntriesList.count() == 0:
                     self.addNewItem()
                 self.addEntriesToCache()
@@ -183,6 +209,11 @@ class CustomEditor(QFrame):
     def setLoopbackContent(self, loopbackContent):
         current = self.CustomEntriesList.currentItem()
         current.setLoopbackContent(loopbackContent)
+    
+    @pyqtSlot(bool)
+    def setEnabled(self, enabled):
+        current = self.CustomEntriesList.currentItem()
+        current.setEnabled(enabled)
     
     @pyqtSlot(Qt.CheckState)
     def setPermanent(self, permanent):
