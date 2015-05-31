@@ -1,1 +1,3 @@
 - Check if there is more than one temporary iso for every grub rep
+- Disable iso if partition is not mounted
+- Use grub.cfg for loopback generation if loopback.cfg doesn't exists
