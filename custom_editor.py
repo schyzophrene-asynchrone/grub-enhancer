@@ -192,6 +192,8 @@ class CustomEditor(QFrame):
             current.setPermanent(True)
             print(True)
         else:
+            for item in [self.CustomEntriesList.item(i) for i in range(self.CustomEntriesList.count())]:
+                item.setPermanent(True)
             current.setPermanent(False)
             print(False)
     
