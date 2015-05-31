@@ -45,7 +45,7 @@ class CustomEntry(QListWidgetItem):
             brush = QBrush(QColor(255, 0, 0))
             self.setForeground(brush)
         else:
-            brush = QBrush(QColor(0, 0, 0))
+            brush = QBrush(Qt.ForegroundRole)
             self.setForeground(brush)
     
     def setLoopbackContent(self, loopbackContent):

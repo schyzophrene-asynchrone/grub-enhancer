@@ -1,3 +1,4 @@
 - Check if there is more than one temporary iso for every grub rep (DONE)
 - Disable iso if partition is not mounted
-- Use grub.cfg for loopback generation if loopback.cfg doesn't exists
+- Use grub.cfg for loopback generation if loopback.cfg doesn't exists (DONE)
+- For enabled custom items use foreground color instead of black (for dark theme) (DONE) DOESNT WORK
