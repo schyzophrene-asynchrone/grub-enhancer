@@ -105,9 +105,18 @@ class Editor(QFrame):
                         content = open(fichier, 'r').read()
                         self.loopback_edit.setPlainText(content)
                     else:
-                        msg = ("L'iso sélectionnée ne contient pas de fichier loopback.\n"
-                               "Il n'est donc pas possible d'en générer un, il faut le créer manuellement.")
-                        QMessageBox.information(self, "ISO non valable", msg)
+                        fichier = join(mountpoint, "boot/grub/grub.cfg")
+                        if exists(fichier):
+                            content = open(fichier, 'r').readlines()
+                            for i in range(len(content)): 
+                                if "linux" in content[i]:
+                                    content[i].replace("\n", " iso-scan/filename=${iso_path}\n")
+                            content = "".join(content)
+                            self.loopback_edit.setPlainText(content)
+                        else:
+                            msg = ("L'iso sélectionnée ne contient pas de fichier loopback.\n"
+                                   "Il n'est donc pas possible d'en générer un, il faut le créer manuellement.")
+                            QMessageBox.information(self, "ISO non valable", msg)
                     
                     # Nécessaire de démonter l'ISO
                     subprocess.call(["umount", mountpoint])
