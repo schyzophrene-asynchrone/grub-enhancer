@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
             grubRep = path.Path(grubRep)
             # Mise à jour de la config de GRUB
             grub_config_file = grubRep / "grub.cfg"
-            if self.grubConf not in grub_config_file:
+            if self.grubConf not in grub_config_file.text():
                 grub_config_file.write_text("### BEGIN GrubEnhancer Config ###\n" + self.grubConf + "### END GrubEnhancer Config ###\n", append=True)
             # Écriture des fonctions GRUB
             greffons = grubRep / "greffons"
