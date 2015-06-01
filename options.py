@@ -17,11 +17,6 @@ class Options(QFrame):
         # Label
         label = QLabel("Options", self)
         label.setAlignment(Qt.AlignHCenter)
-        # Radio Buttons
-        restart_nowCB = QRadioButton("Redémarrer maintenant", self)
-        restart_laterCB = QRadioButton("Redémarrer plus tard", self)
-        restart_nowCB.toggled.connect(self._setRestart)
-        restart_laterCB.toggle()
         # Check Box
         self.permanentCB = QCheckBox("Permanent", self)
         self.permanentCB.stateChanged.connect(self._setPermanent)
@@ -29,14 +24,11 @@ class Options(QFrame):
         # Layouts
         vbox = QVBoxLayout()
         vbox.addWidget(label)
-        vbox.addWidget(restart_nowCB)
-        vbox.addWidget(restart_laterCB)
         vbox.addWidget(self.permanentCB)
         
         
         # Création des variables
         self.permanent = False
-        self.restart_now = False
         
         # Affichage de l'interface
         self.setLayout(vbox)
@@ -48,23 +40,16 @@ class Options(QFrame):
         else:
             self.permanent = False
         
-    def _setRestart(self, state):
-        self.restart_now = state
-        
     def getPermanent(self):
         """Renvoie l'état du boutton "permanent" """
         return self.permanent
-    
-    def getRestart(self):
-        return self.restart_now
     
     def disablePerm(self, state):
         self.permanentCB.setCheckState(state)
         self.permanentCB.setDisabled(True)
     
-    def enablePerm(self, state):
+    def enablePerm(self):
         self.permanentCB.setEnabled(True)
-        self.permanentCB.setCheckState(state)
 
 if __name__ == "__main__":
     

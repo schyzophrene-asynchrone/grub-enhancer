@@ -5,9 +5,10 @@ import sys
 import editor
 import grub
 import options
+import custom_editor
 import path
 import subprocess
-from os.path import basename
+from os.path import basename, exists, join
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import (QMainWindow, QApplication,
                              QAction, qApp, QSplitter,
@@ -30,11 +31,11 @@ class MainWindow(QMainWindow):
     grubFonctionsFile = path.Path("fonctions_iso.cfg")
     # Instructions
     incipit = "source ${prefix}/greffons/fonctions_iso.cfg\n"
-    include_custom = [( "if [ -f  \${config_directory}/custom.cfg ]; then\n"
-                        "source \${config_directory}/custom.cfg\n"
-                        'elif [ -z "\${config_directory}" -a -f  \$prefix/custom.cfg ]; then\n'
-                        "source \$prefix/custom.cfg;\n"
-                        "fi\n")]
+    grubConf = ("if [ -f  \${config_directory}/custom.cfg ]; then\n"
+                "source \${config_directory}/custom.cfg\n"
+                'elif [ -z "\${config_directory}" -a -f  \$prefix/custom.cfg ]; then\n'
+                "source \$prefix/custom.cfg;\n"
+                "fi\n")
     
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
@@ -43,12 +44,15 @@ class MainWindow(QMainWindow):
         # Left
         self.grubList = grub.GrubList(self)
         self.options = options.Options(self)
-        # Right
+        # Middle
         self.editeur = editor.Editor(self)
         valid = QPushButton("Valider")
         valid.clicked.connect(self.valid)
         cancel = QPushButton("Quitter")
         cancel.clicked.connect(qApp.quit)
+        # Right
+        self.customEditeur = custom_editor.CustomEditor(self.grubList.getGrubRep())
+        self.customEditeur.currentItemChanged.connect(self.updateDisplay)
         # Top
         menubar = self.menuBar()
         # Bottom
@@ -109,152 +113,93 @@ class MainWindow(QMainWindow):
         left.addWidget(self.options)
         leftW = QWidget()
         leftW.setLayout(left)
+        # Middle
+        middle = QVBoxLayout()
+        middle.addWidget(self.editeur)
+        middle.addLayout(buttons)
+        middleW = QWidget()
+        middleW.setLayout(middle)
         # Right
         right = QVBoxLayout()
-        right.addWidget(self.editeur)
-        right.addLayout(buttons)
+        right.addWidget(self.customEditeur)
         rightW = QWidget()
         rightW.setLayout(right)
         # Window
         window = QSplitter()
         window.addWidget(leftW)
+        window.addWidget(middleW)
         window.addWidget(rightW)
         
         self.setCentralWidget(window)
         self.setWindowTitle("GrubEnhancer")
+        self.updateDisplay(self.customEditeur.getCurrent())
         
         # Signals
         self.grubList.scanner.started.connect(self.progressBar.show)
         self.grubList.scanner.max_changed.connect(self.progressBar.setMaximum)
         self.grubList.scanner.value_changed.connect(self.progressBar.setValue)
         self.grubList.scanner.finished.connect(self.progressBar.hide)
-        self.grubList.grub_list.itemActivated.connect(self.checkGrubFileSystem)
+        self.grubList.grub_list.currentItemChanged.connect(self.checkGrubFileSystem)
+        self.grubList.grub_list.currentItemChanged.connect(self.customEditeur.setGrubRep)
+        self.editeur.iso_location.textChanged.connect(self.customEditeur.setIsoLocation)
+        self.editeur.textChanged.connect(self.customEditeur.setLoopbackContent)
+        self.options.permanentCB.stateChanged.connect(self.customEditeur.setPermanent)
         
     def valid(self):
         """Lance la procédure de mise à jour de Grub,
         après avoir vérifié que tous les paramètres
         étaient bien donnés"""
-        if self.grubList.getGrubRep() and self.editeur.getIsoLocation():
-            self.progressBar.show()
-            self.progressBar.setMaximum(5)
-            self.progressBar.setValue(0)
-            self.progressBar.setValue(1)
-            self._updateGrub()
-            self.progressBar.setValue(2)
-            self._writeFunction()
-            self.progressBar.setValue(3)
-            self._writeLoopback()
-            self.progressBar.setValue(4)
-            self._updateCustom()
-            self.progressBar.setValue(5)
-            msg = "La configuration de Grub a bien été mise à jour."
-            if self.options.getPermanent(): msg += ("\nLes entrées ajoutées au menu GRUB pourraient disparaître lors de la prochaine"
-                                                    " mise à jour du noyau ou de GRUB. Si c'est le cas, utilisez le bouton"
-                                                    "«Ajouter les entrées custom à la configuration de GRUB» pour les rendre permanentes")
-            if self.options.getRestart(): msg += "\nL'ordinateur va maintenant redémarrer."
-            QMessageBox.information(self, "Mise à jour effectuée", msg)
-            self._restart()
-            self.progressBar.reset()
-            self.progressBar.hide()
-        else:
-            msg = "Vous devez préciser au moins une ISO et un répertoire GRUB !"
-            QMessageBox.critical(self, "Paramètres manquants", msg)
-        
-    def checkGrubConfig(self):
-        """Vérifie la présence du fichier «41_custom» dans le
-        répertoire "/etc/grub.d". Le crée sinon."""
-        grub_dir = path.Path("/etc/grub.d/")
-        files = grub_dir.files()
-        if "41_custom" in files: return True
-        else:
-            custom = grub_dir / "41_custom"
-            copy = self.custom_41.copy(custom)
-            copy.chmod(0o755)
-            return True
-    
-    def _updateGrub(self):
-        """Met à jour la configuration de grub"""
-        grub_dir = path.Path(self.grubList.getGrubRep())
-        config_file = grub_dir / "grub.cfg"
-        if self.include_custom in config_file.text():
-            pass
-        else:
-            text = "### BEGIN GrubEnhancer Config ###\n" + self.include_custom + "### END GrubEnhancer Config ###\n"
-            config_file.append(text)
-    
-    def _writeFunction(self):
-        """Écrit les fonctions nécessaires au démarrage
-        sur iso dans le répertoire grub. Les fonctions sont
-        lues à partir de «file»"""
-        grub_dir = path.Path(self.grubList.getGrubRep())
-        try:
-            grub_dir.joinpath("greffons").mkdir()
-        except OSError: pass # Le répertoire existe déjà
-        self.grubFonctionsFile.copy(grub_dir / "greffons/fonctions_iso.cfg")
-        return True
-    
-    def _writeLoopback(self):
-        """Écrit le fichier loopback"""
-        content = self.editeur.getLoopbackContent().strip()
-        if content:
-            loopback = path.Path(self.editeur.getIsoLocation().replace(".iso", ".loopback.cfg"))
-            loopback.write_text(content)
-        return True
-    
-    def _updateCustom(self):
-        """Modifie le fichier contenant les entrées du menu"""
-        grub_dir = path.Path(self.grubList.getGrubRep())
-        custom = grub_dir / "custom.cfg"
-        try: custom_content = custom.lines(encoding="utf-8")
-        except OSError: custom_content = []
-
-        # Rajout de l'incipit
-        if self.incipit not in custom_content:
-            custom_content[:0] = [self.incipit]
-
-        # Suppression des instructions «amorce_iso»
-        for line in custom_content:
-            if "amorce_iso" in line:
-                custom_content.remove(line)
-
-        # Calcul des chemins depuis la racine de la partition
-        iso = path.Path(self.editeur.getIsoLocation())
-        mountpoint = find_mount(iso)
-        iso = iso.replace(mountpoint, "", 1)
-        if self.editeur.getLoopbackContent().strip():
-            loopback = iso.replace(".iso", ".loopback.cfg")
-        else:
-            loopback = None
-
-        # Obtention du nom de l'iso
-        iso_name = basename(iso)
-        
-        # Obtention des variables
-        perm = self.options.getPermanent()
-        
-        if perm:
-            if loopback:
-                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '" "' + loopback + '"} #' + mountpoint + '\n'
-            elif not loopback:
-                config = '\tsubmenu "' + iso_name + '" {iso_boot "' + iso + '"} #' + mountpoint + '\n'
-        else:
-            if loopback:
-                config = 'amorce_iso "{}" "{}" #{}\n'.format(iso, loopback, mountpoint)
-            elif not loopback:
-                config = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
-            subprocess.call(['grub-editenv', '/boot/grub/grubenv', 'set', 'amorceiso=true'])
-        
-        # Rajout si la ligne n'existait pas déjà
-        if config not in custom_content: custom_content.append(config)
-        custom_content = "".join(custom_content)
-        custom.write_text(custom_content)
-        
-        return True
-    
-    def _restart(self):
-        """Redémarre si voulu"""
-        if self.options.getRestart():
-            subprocess.call(["shutdown", "-r", "now"])
+        cache = self.customEditeur.getCache()
+        for grubRep, entries in cache.items():
+            grubRep = path.Path(grubRep)
+            # Mise à jour de la config de GRUB
+            grub_config_file = grubRep / "grub.cfg"
+            if self.grubConf not in grub_config_file.text():
+                grub_config_file.write_text("### BEGIN GrubEnhancer Config ###\n" + self.grubConf + "### END GrubEnhancer Config ###\n", append=True)
+            # Écriture des fonctions GRUB
+            greffons = grubRep / "greffons"
+            if not greffons.isdir():
+                greffons.mkdir()
+            fonctionsFile = greffons / "fonctions_iso.cfg"
+            self.grubFonctionsFile.copy(fonctionsFile)
+            # Création des Loopback et du Custom
+            custom = grubRep / "custom.cfg"
+            custom_content = [self.incipit]
+            for entry in entries:
+                # Récupération des paramètres
+                name = entry.text()
+                iso_location = entry.getIsoLocation()
+                print(iso_location)
+                loopback_content = entry.getLoopbackContent()
+                loopback_location = iso_location.replace('.iso', '.loopback.cfg')
+                mountpoint = entry.getMountPoint()
+                permanent = entry.getPermanent()
+                # Création du Loopback
+                print(iso_location, loopback_location, mountpoint, sep=" : ")
+                if loopback_content:
+                    full_loopback_location = path.Path(mountpoint) / loopback_location[1:] # On vire toujours le premier /
+                    full_loopback_location.write_text(loopback_content)
+                # Création d'une ligne du Custom
+                if permanent:
+                    if loopback_content:
+                        custom_line = '\tsubmenu "' + name + '" {iso_boot "' + iso_location + '" "' + loopback_location + '"} #' + mountpoint + '\n'
+                    else:
+                        custom_line = '\tsubmenu "' + name + '" {iso_boot "' + iso_location + '"} #' + mountpoint + '\n'
+                else:
+                    if loopback_content:
+                        custom_line = 'amorce_iso "{}" "{}" #{}\n'.format(iso, loopback, mountpoint)
+                    else:
+                        custom_line = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
+                    subprocess.call(['grub-editenv', grubRep + '/grubenv', 'set', 'amorceiso=true'])
+                custom_content.append(custom_line)
+            # Création du Custom
+            custom.write_lines(custom_content)
+        # Affichage d'un message de confirmation
+        msg = "Vos modifications ont bien été prises en compte."
+        info = QMessageBox(self)
+        info.setWindowTitle("GrubEnhancer")
+        info.setText(msg)
+        info.exec_()
     
     def about(self):
         msg = ("Ce programme a été créé pour vous permettre de lancer une image iso sans avoir besoin de la graver.\n\n"
@@ -268,8 +213,8 @@ class MainWindow(QMainWindow):
         description.setInformativeText(msg)
         description.exec_()
     
-    @pyqtSlot(QListWidgetItem)
-    def checkGrubFileSystem(self, grub_dir):
+    @pyqtSlot(QListWidgetItem, QListWidgetItem)
+    def checkGrubFileSystem(self, grub_dir, prev_grub_dir):
         grub_dir = grub_dir.text()
         filesystem = subprocess.check_output(["grub-probe", "--target=fs", grub_dir]).decode().split()[0]
         if filesystem in ("btrfs", "cpiofs", "newc","odc",
@@ -280,8 +225,47 @@ class MainWindow(QMainWindow):
             if disque.startswith(("/dev/mapper", "/dev/dm", "/dev/md")):
                 self.options.disablePerm(Qt.Checked)
             else:
-                self.options.enablePerm(Qt.Unchecked)
-                                              
+                self.options.enablePerm()
+    
+    @pyqtSlot(custom_editor.CustomEntry)
+    def updateDisplay(self, item):
+        mountpoint = item.getMountPoint()
+        isoLocation = path.Path(mountpoint) / item.getIsoLocation()[1:]
+        loopbackContent = item.getLoopbackContent()
+        permanent = item.getPermanent()
+        enabled = item.getEnabled()
+        self.editeur.loopback_edit.setPlainText(loopbackContent)
+        self.editeur.iso_location.setText(isoLocation)
+        if permanent:
+            self.options.permanentCB.setCheckState(Qt.Checked)
+        else:
+            self.options.permanentCB.setCheckState(Qt.Unchecked)
+        if exists(isoLocation):
+            enabled = True
+            item.setEnabled(True)
+        else:
+            enabled = False
+            item.setEnabled(False)
+        if not enabled:
+            self.options.setDisabled(True)
+            self.editeur.setDisabled(True)
+        else:
+            self.options.setEnabled(True)
+            self.editeur.setEnabled(True)
+    
+    @pyqtSlot()
+    def checkGrubConfig(self):
+        """Vérifie la présence du fichier «41_custom» dans le
+        répertoire "/etc/grub.d". Le crée sinon."""
+        grub_dir = path.Path("/etc/grub.d/")
+        files = grub_dir.files()
+        if "41_custom" in files: return True
+        else:
+            custom = grub_dir / "41_custom"
+            copy = self.custom_41.copy(custom)
+            copy.chmod(0o755)
+            return True
+    
     
 if __name__ == "__main__":
     

@@ -5,8 +5,8 @@ import sys
 import tempfile
 import subprocess
 import path
-from os.path import expanduser, join
-from PyQt5.QtCore import Qt, pyqtSlot
+from os.path import expanduser, join, exists
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (QFrame, QApplication,
                              QLineEdit, QPushButton,
                              QPlainTextEdit,QHBoxLayout,
@@ -21,6 +21,9 @@ def find_mount(location):
         return find_mount(location.parent)
 
 class Editor(QFrame):
+    
+    textChanged = pyqtSignal(str)
+    
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
         
@@ -36,6 +39,7 @@ class Editor(QFrame):
         label = QLabel("Fichier Loopback")
         label.setAlignment(Qt.AlignHCenter)
         self.loopback_edit = QPlainTextEdit()
+        self.loopback_edit.textChanged.connect(self.emitChangedText)
         # Bottom
         loopback_choose = QPushButton("Ouvrir")
         loopback_gen = QPushButton("Générer")
@@ -97,8 +101,22 @@ class Editor(QFrame):
                     QMessageBox.critical(self, "Impossible de monter l'ISO", msg)
                 else:
                     fichier = join(mountpoint, "boot/grub/loopback.cfg")
-                    content = open(fichier, 'r').read()
-                    self.loopback_edit.setPlainText(content)
+                    if exists(fichier):
+                        content = open(fichier, 'r').read()
+                        self.loopback_edit.setPlainText(content)
+                    else:
+                        fichier = join(mountpoint, "boot/grub/grub.cfg")
+                        if exists(fichier):
+                            content = open(fichier, 'r').readlines()
+                            for i in range(len(content)): 
+                                if "linux" in content[i]:
+                                    content[i].replace("\n", " iso-scan/filename=${iso_path}\n")
+                            content = "".join(content)
+                            self.loopback_edit.setPlainText(content)
+                        else:
+                            msg = ("L'iso sélectionnée ne contient pas de fichier loopback.\n"
+                                   "Il n'est donc pas possible d'en générer un, il faut le créer manuellement.")
+                            QMessageBox.information(self, "ISO non valable", msg)
                     
                     # Nécessaire de démonter l'ISO
                     subprocess.call(["umount", mountpoint])
@@ -125,9 +143,15 @@ class Editor(QFrame):
         isoPath = isoPath.replace(find_mount(isoPath), "", 1)
         if " " in isoPath:
             self.isoWarning.setText("<font color=#FF0000>Le chemin menant à l'ISO ne peut pas contenir d'espaces !</font>")
+        elif not exists(self.iso_location.text()) :
+            self.isoWarning.setText("<font color=#FF0000>L'iso sélectionnée n'existe pas.\nLa partition sur laquelle elle se trouve est probablement démontée.</font>")
         else:
             self.isoWarning.setText("")
             self.isoWarning.setToolTip("")
+    
+    @pyqtSlot()
+    def emitChangedText(self):
+        self.textChanged.emit(self.loopback_edit.toPlainText())
     
 if __name__ == "__main__":
     
