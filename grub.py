@@ -123,7 +123,7 @@ class GrubList(QFrame):
         dir = QFileDialog.getExistingDirectory(self,
                                                "Sélectionner un répertoire GRUB",
                                                expanduser('~'))
-        if (path.Path(dir) / grub.cfg).exists():
+        if (path.Path(dir) / "grub.cfg").exists():
             self.add_item(dir)
         else:
             error = QMessageBox(self)
@@ -146,6 +146,7 @@ class GrubList(QFrame):
         self.grub_list.clear()
         for item in items:
             self.grub_list.addItem(item)
+        self.grub_list.setCurrentRow(0)
     
     @pyqtSlot(str)
     def add_item(self, dir):
