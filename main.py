@@ -139,8 +139,8 @@ class MainWindow(QMainWindow):
         self.grubList.scanner.max_changed.connect(self.progressBar.setMaximum)
         self.grubList.scanner.value_changed.connect(self.progressBar.setValue)
         self.grubList.scanner.finished.connect(self.progressBar.hide)
-        self.grubList.grub_list.currentItemChanged.connect(self.checkGrubFileSystem)
-        self.grubList.grub_list.currentItemChanged.connect(self.customEditeur.setGrubRep)
+        self.grubList.newCurrentItem.connect(self.checkGrubFileSystem)
+        self.grubList.newCurrentItem.connect(self.customEditeur.setGrubRep)
         self.editeur.iso_location.textChanged.connect(self.customEditeur.setIsoLocation)
         self.editeur.textChanged.connect(self.customEditeur.setLoopbackContent)
         self.options.permanentCB.stateChanged.connect(self.customEditeur.setPermanent)
@@ -213,8 +213,8 @@ class MainWindow(QMainWindow):
         description.setInformativeText(msg)
         description.exec_()
     
-    @pyqtSlot(QListWidgetItem, QListWidgetItem)
-    def checkGrubFileSystem(self, grub_dir, prev_grub_dir):
+    @pyqtSlot(QListWidgetItem)
+    def checkGrubFileSystem(self, grub_dir):
         grub_dir = grub_dir.text()
         filesystem = subprocess.check_output(["grub-probe", "--target=fs", grub_dir]).decode().split()[0]
         if filesystem in ("btrfs", "cpiofs", "newc","odc",

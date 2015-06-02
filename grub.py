@@ -62,6 +62,7 @@ class GrubList(QFrame):
     """Classe représentant la liste des répertoires GRUB"""
     
     scanner = Scanner("/", "*/grub/grub.cfg")
+    newCurrentItem = pyqtSignal(QListWidgetItem)
     
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
@@ -98,6 +99,7 @@ class GrubList(QFrame):
         self.scanner.found_rep.connect(self.add_items)
         self.scanner.started.connect(self._scan_started)
         self.scanner.finished.connect(self._scan_finished)
+        self.grub_list.currentItemChanged.connect(self.currentItemChanged)
         
         # Ajout de /boot/grub s'il existe
         if path.Path("/boot/grub/grub.cfg").exists():
@@ -152,6 +154,10 @@ class GrubList(QFrame):
     def _scan_finished(self):
         self.scanButton.setEnabled(True)
         self.add.setEnabled(True)
+    
+    @pyqtSlot(QListWidgetItem, QListWidgetItem)
+    def currentItemChanged(self, current, previous):
+        self.newCurrentItem.emit(current)
 
 if __name__ == "__main__":
     
