@@ -213,9 +213,9 @@ class MainWindow(QMainWindow):
         description.setInformativeText(msg)
         description.exec_()
     
-    @pyqtSlot(QListWidgetItem)
+    @pyqtSlot(grub.GrubRep)
     def checkGrubFileSystem(self, grub_dir):
-        grub_dir = grub_dir.text()
+        grub_dir = grub_dir.getPath()
         filesystem = subprocess.check_output(["grub-probe", "--target=fs", grub_dir]).decode().split()[0]
         if filesystem in ("btrfs", "cpiofs", "newc","odc",
                           "romfs", "squash4", "tarfs", "zfs"):

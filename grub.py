@@ -25,6 +25,16 @@ def find(rep, pattern):
             except (PermissionError, FileNotFoundError): pass
     return result
 
+class GrubRep(object):
+    def __init__(self, path):
+        self.path = path
+    
+    def setPath(self, path):
+        self.path = path
+    
+    def getPath(self):
+        return self.path
+
 class Scanner(QThread):
     """Classe scannant le système de fichier pour trouver
     un pattern donné lors de l'instanciation"""
@@ -62,7 +72,7 @@ class GrubList(QFrame):
     """Classe représentant la liste des répertoires GRUB"""
     
     scanner = Scanner("/", "*/grub/grub.cfg")
-    newCurrentItem = pyqtSignal(QListWidgetItem)
+    newCurrentItem = pyqtSignal(GrubRep)
     
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
@@ -165,7 +175,11 @@ class GrubList(QFrame):
     
     @pyqtSlot(QListWidgetItem, QListWidgetItem)
     def currentItemChanged(self, current, previous):
-        self.newCurrentItem.emit(current)
+        if current == None:
+            grubRep = GrubRep(None)
+        else:
+            grubRep = GrubRep(current.text())
+        self.newCurrentItem.emit(grubRep)
 
 if __name__ == "__main__":
     
