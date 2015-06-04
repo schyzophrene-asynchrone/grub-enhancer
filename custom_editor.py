@@ -203,7 +203,7 @@ class CustomEditor(QFrame):
             for i in range(self.CustomEntriesList.count()):
                 self.CustomEntriesList.takeItem(0)
             self.setDisabled(True)
-            entry = CustomEntry(self.CustomEntriesList, "", "", True, "", "", False)
+            entry = CustomEntry(self.CustomEntriesList, "None", "/", True, "/", "/", False)
             self.CustomEntriesList.setCurrentItem(entry)
     
     @pyqtSlot(str)
@@ -220,7 +220,7 @@ class CustomEditor(QFrame):
         current.setLoopbackContent(loopbackContent)
     
     @pyqtSlot(bool)
-    def setEnabled(self, enabled):
+    def enableCurrentItem(self, enabled):
         current = self.CustomEntriesList.currentItem()
         current.setEnabled(enabled)
     
