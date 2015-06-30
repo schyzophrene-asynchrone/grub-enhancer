@@ -147,7 +147,6 @@ class Editor(QFrame):
             self.isoWarning.setText("<font color=#FF0000>L'iso sélectionnée n'existe pas.\nLa partition sur laquelle elle se trouve est probablement démontée.</font>")
         else:
             self.isoWarning.setText("")
-            self.isoWarning.setToolTip("")
     
     @pyqtSlot()
     def emitChangedText(self):
