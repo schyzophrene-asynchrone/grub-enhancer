@@ -246,12 +246,8 @@ class MainWindow(QMainWindow):
         else:
             enabled = False
             item.setEnabled(False)
-        if not enabled:
-            self.options.setDisabled(True)
-            self.editeur.setDisabled(True)
-        else:
-            self.options.setEnabled(True)
-            self.editeur.setEnabled(True)
+        self.options.setEnabled(enabled)
+        self.editeur.setEnabled(enabled)
     
     @pyqtSlot()
     def checkGrubConfig(self):
