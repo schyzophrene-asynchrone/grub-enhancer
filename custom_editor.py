@@ -52,7 +52,7 @@ class CustomEntry(QListWidgetItem):
             brush = QBrush(QColor(255, 0, 0))
             self.setForeground(brush)
         else:
-            brush = QBrush(Qt.ForegroundRole)
+            brush = QBrush(QColor(0, 0, 0))
             self.setForeground(brush)
     
     def setLoopbackContent(self, loopbackContent):
@@ -64,7 +64,7 @@ class CustomEntry(QListWidgetItem):
     def setEnabled(self, enabled):
         self.enabled = enabled
         if enabled:
-            brush = QBrush(Qt.ForegroundRole)
+            brush = QBrush(QColor(0, 0, 0))
             self.setForeground(brush)
         else:
             brush = QBrush(QColor(255, 128, 0))
