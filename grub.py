@@ -26,16 +26,6 @@ def find(rep, pattern):
             except (PermissionError, FileNotFoundError): pass
     return result
 
-class GrubRep(object):
-    def __init__(self, path):
-        self.path = path
-    
-    def setPath(self, path):
-        self.path = path
-    
-    def getPath(self):
-        return self.path
-
 class Scanner(QThread):
     """Classe scannant le système de fichier pour trouver
     un pattern donné lors de l'instanciation"""
@@ -76,9 +66,9 @@ class GrubList(QDialog):
     """Classe représentant la liste des répertoires GRUB"""
     
     scanner = Scanner("/", "*/grub/grub.cfg")
-    newCurrentItem = pyqtSignal(GrubRep)
+    newCurrentItem = pyqtSignal(str)
     
-    def __init__(self, parent=None, text="Choisissez un répertoire GRUB"):
+    def __init__(self, parent=None, text="Choisissez un répertoire GRUB", allowNone=True):
         QDialog.__init__(self, parent)
         
         # Création des éléments
@@ -96,9 +86,12 @@ class GrubList(QDialog):
         self.scanButton.clicked.connect(self.scan)
         self.add.clicked.connect(self.openSelectionDialog)
         self.scanButton.setToolTip("Cette opération peut être <b>très</b> longue !")
-        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        if allowNone:
+            self.buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+            self.buttonBox.rejected.connect(self.reject)
+        else:
+            self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
         self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
         # Progressbar
         self.progressbar = QProgressBar()
         self.progressbar.setEnabled(False)

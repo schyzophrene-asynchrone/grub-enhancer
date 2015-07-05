@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import (QFrame, QListWidget,
                              QPushButton, QLabel,
                              QVBoxLayout, QHBoxLayout,
                              QApplication, QListWidgetItem,)
-from grub import GrubRep
 
 def find_mount(location):
     location = path.Path(location)
@@ -191,20 +190,11 @@ class CustomEditor(QFrame):
         item = self.CustomEntriesList.takeItem(current)
         self.cache[self.grubRep].remove(item)
     
-    @pyqtSlot(GrubRep)
     def setGrubRep(self, grubRep):
-        if grubRep.getPath():
-            self.setEnabled(True)
-            self.grubRep = path.Path(grubRep.getPath())
-            for i in range(self.CustomEntriesList.count()):
-                self.CustomEntriesList.takeItem(0)
-            self.getCustomEntries()
-        else:
-            for i in range(self.CustomEntriesList.count()):
-                self.CustomEntriesList.takeItem(0)
-            self.setDisabled(True)
-            entry = CustomEntry(self.CustomEntriesList, "None", "/", True, "/", "/", False)
-            self.CustomEntriesList.setCurrentItem(entry)
+        self.grubRep = path.Path(grubRep)
+        for i in range(self.CustomEntriesList.count()):
+            self.CustomEntriesList.takeItem(0)
+        self.getCustomEntries()
     
     @pyqtSlot(str)
     def setIsoLocation(self, isoLocation):
