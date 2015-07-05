@@ -154,7 +154,7 @@ class GrubList(QDialog):
                                                expanduser('~'))
         if (path.Path(dir) / "grub.cfg").exists():
             self.add_item(dir)
-        else:
+        elif dir:
             error = QMessageBox(self)
             msg = "Ce répertoire n'est pas un répertoire GRUB valide !"
             error.setText(msg)
