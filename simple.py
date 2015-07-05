@@ -202,11 +202,10 @@ if __name__ == "__main__":
         parser.add_argument('-d', '--directory', default="/boot/grub", help="Le répertoire GRUB à utiliser")
         
         args = parser.parse_args()
+        grubDir = args.directory
         
-        if (path(args.directory) / "grub.cfg").exists():
-            grubDir = args.directory
-        else:
-            choices = GrubList(text="{} ne semble pas être un répertoire GRUB.\nVeuillez en choisir un autre.".format(args.directory))
+        if not (path(grubDir) / "grub.cfg").exists():
+            choices = GrubList(text="{} ne semble pas être un répertoire GRUB.\nVeuillez en choisir un autre.".format(args.directory), allowNone=False)
             choices.setWindowTitle("Liste des répertoires GRUB")
             grubDir = choices.selectGrubRep()
         

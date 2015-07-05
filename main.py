@@ -33,18 +33,15 @@ class MainWindow(QMainWindow):
                 "  source $prefix/custom.cfg;\n"
                 "fi\n")
     
-    def __init__(self, grubDir="/boot/grub" ,allowTemp=True):
+    def __init__(self, grubDir="/boot/grub"):
         QMainWindow.__init__(self)
         # Variables
         self.grubDir = path(grubDir)
         
         # Création des éléments
         # Left
-        self.customEditor = CustomEditor(self.grubDir)
-        if allowTemp:
-            self.options = Options(self)
-        else:
-            self.options = None
+        self.customEditor = CustomEditor()
+        self.options = Options(self)
         # Right
         self.editor = Editor(self)
         valid = QPushButton("Valider")
@@ -62,8 +59,7 @@ class MainWindow(QMainWindow):
         # Left
         left = QVBoxLayout()
         left.addWidget(self.customEditor)
-        if self.options:
-            left.addWidget(self.options)
+        left.addWidget(self.options)
         leftW = QWidget()
         leftW.setLayout(left)
         # Right
@@ -104,11 +100,11 @@ class MainWindow(QMainWindow):
         self.customEditor.currentItemChanged.connect(self.updateDisplay)
         self.editor.iso_location.textChanged.connect(self.customEditor.setIsoLocation)
         self.editor.textChanged.connect(self.customEditor.setLoopbackContent)
-        if self.options:
-            self.options.permanentCB.stateChanged.connect(self.customEditor.setPermanent)
+        self.options.permanentCB.stateChanged.connect(self.customEditor.setPermanent)
             
         # Initialisation de l'interface
         self.setWindowTitle("GrubEnhancer")
+        self.loadGrubDir()
         self.updateDisplay(self.customEditor.getCurrent())
         
     @pyqtSlot(CustomEntry)
@@ -122,21 +118,18 @@ class MainWindow(QMainWindow):
         # Mise à jour de l'interface
         self.editor.loopback_edit.setPlainText(loopbackContent)
         self.editor.iso_location.setText(isoLocation)
-        if self.options:
-            if permanent:
-                self.options.permanentCB.setCheckState(Qt.Checked)
-            else:
-                self.options.permanentCB.setCheckState(Qt.Unchecked)
+        if permanent:
+            self.options.permanentCB.setCheckState(Qt.Checked)
+        else:
+            self.options.permanentCB.setCheckState(Qt.Unchecked)
         if isoLocation.exists():
             entry.setEnabled(True)
             self.editor.setEnabled(True)
-            if self.options:
-                self.options.setEnabled(True)
+            self.options.setEnabled(True)
         else:
             entry.setEnabled(False)
             self.editor.setEnabled(False)
-            if self.options:
-                self.options.setEnabled(False)
+            self.options.setEnabled(False)
     
     def valid(self):
         """Lance la procédure de mise à jour de Grub,
@@ -193,6 +186,22 @@ class MainWindow(QMainWindow):
         info.setWindowTitle("GrubEnhancer")
         info.setText(msg)
         info.exec_()
+    
+    def loadGrubDir(self):
+        
+        self.customEditor.setGrubRep(self.grubDir)
+        
+        forbiddenFilesystem = ("btrfs", "cpiofs", "newc","odc",
+                               "romfs", "squash4", "tarfs", "zfs")
+        forbiddenDeviceName = ("/dev/mapper", "/dev/dm", "/dev/md")
+        
+        filesystem = subprocess.check_output(["grub-probe", "--target=fs", self.grubDir]).decode().split()[0]
+        disque = subprocess.check_output(["grub-probe", "--target=disk", self.grubDir]).decode().split()[0]
+        
+        if filesystem in forbiddenFilesystem or disque.startswith(forbiddenDeviceName):
+            self.options.setEnabled(False)
+        else:
+            self.options.setEnabled(True)
 
 if __name__ == "__main__":
     
@@ -205,25 +214,14 @@ if __name__ == "__main__":
         parser.add_argument('-d', '--directory', default="/boot/grub", help="Le répertoire GRUB à utiliser")
         
         args = parser.parse_args()
+        grubDir = args.directory
         
-        if (path(args.directory) / "grub.cfg").exists():
-            grubDir = args.directory
-        else:
-            choices = GrubList(text="{} ne semble pas être un répertoire GRUB.\nVeuillez en choisir un autre.".format(args.directory))
+        while not (path(grubDir) / "grub.cfg").exists():
+            choices = GrubList(text="{} ne semble pas être un répertoire GRUB.\nVeuillez en choisir un autre.".format(args.directory), allowNone=False)
             choices.setWindowTitle("Liste des répertoires GRUB")
             grubDir = choices.selectGrubRep()
         
-        filesystem = subprocess.check_output(["grub-probe", "--target=fs", "/boot/grub"]).decode().split()[0]
-        disque = subprocess.check_output(["grub-probe", "--target=disk", "/boot/grub"]).decode().split()[0]
-        
-        forbiddenFilesystem = ("btrfs", "cpiofs", "newc","odc",
-                               "romfs", "squash4", "tarfs", "zfs")
-        forbiddenDeviceName = ("/dev/mapper", "/dev/dm", "/dev/md")
-        
-        if filesystem in forbiddenFilesystem or disque.startswith(forbiddenDeviceName):
-            window = MainWindow(grubDir=grubDir, allowTemp=False)
-        else:
-            window = MainWindow(grubDir=grubDir)
+        window = MainWindow(grubDir=grubDir)
         
         window.show()
         sys.exit(app.exec_())
