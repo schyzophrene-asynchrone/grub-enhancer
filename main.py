@@ -40,6 +40,8 @@ class MainWindow(QMainWindow):
         
         # Création des éléments
         # Left
+        grubButton = QPushButton("Choisir un répertoire GRUB")
+        grubButton.clicked.connect(self.chooseAnotherGrubDir)
         self.customEditor = CustomEditor()
         self.options = Options(self)
         # Right
@@ -58,6 +60,7 @@ class MainWindow(QMainWindow):
         buttons.addWidget(cancel)
         # Left
         left = QVBoxLayout()
+        left.addWidget(grubButton)
         left.addWidget(self.customEditor)
         left.addWidget(self.options)
         leftW = QWidget()
@@ -131,6 +134,7 @@ class MainWindow(QMainWindow):
             self.editor.setEnabled(False)
             self.options.setEnabled(False)
     
+    @pyqtSlot()
     def valid(self):
         """Lance la procédure de mise à jour de Grub,
         après avoir vérifié que tous les paramètres
@@ -202,6 +206,14 @@ class MainWindow(QMainWindow):
             self.options.setEnabled(False)
         else:
             self.options.setEnabled(True)
+    
+    @pyqtSlot()
+    def chooseAnotherGrubDir(self):
+        choices = GrubList(parent=self)
+        grubDir = choices.selectGrubRep()
+        if grubDir:
+            self.grubDir = grubDir
+            self.loadGrubDir()
 
 if __name__ == "__main__":
     
