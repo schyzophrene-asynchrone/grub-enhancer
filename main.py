@@ -216,7 +216,7 @@ if __name__ == "__main__":
         args = parser.parse_args()
         grubDir = args.directory
         
-        while not (path(grubDir) / "grub.cfg").exists():
+        if not (path(grubDir) / "grub.cfg").exists():
             choices = GrubList(text="{} ne semble pas être un répertoire GRUB.\nVeuillez en choisir un autre.".format(args.directory), allowNone=False)
             choices.setWindowTitle("Liste des répertoires GRUB")
             grubDir = choices.selectGrubRep()
