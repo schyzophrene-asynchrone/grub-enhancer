@@ -113,8 +113,8 @@ class MainWindow(QMainWindow):
     @pyqtSlot(CustomEntry)
     def updateDisplay(self, entry):
         # Obtention des paramètres de l'entrée
-        mountpoint = entry.getMountPoint()
-        isoLocation = path(mountpoint) / entry.getIsoLocation()[1:]
+        mountpoint = path(entry.getMountPoint())
+        isoLocation = mountpoint / entry.getIsoLocation()[1:]
         loopbackContent = entry.getLoopbackContent()
         permanent = entry.getPermanent()
         enabled = entry.getEnabled()
@@ -157,18 +157,34 @@ class MainWindow(QMainWindow):
         for entry in entries:
             # Récupération des paramètres
             name = entry.text()
-            iso_location = entry.getIsoLocation()
+            iso_location = path(entry.getIsoLocation())
             print(iso_location)
             loopback_content = entry.getLoopbackContent()
-            loopback_location = iso_location.replace('.iso', '.loopback.cfg')
-            mountpoint = entry.getMountPoint()
+            loopback_location = path(iso_location.replace('.iso', '.loopback.cfg'))
+            mountpoint = path(entry.getMountPoint())
             permanent = entry.getPermanent()
+            # Création d'un lien si espaces
+            if " " in iso_location:
+                # Création d'un lien pour l'iso
+                full_iso_location = mountpoint / iso_location[1:]
+                symlink_iso = mountpoint / iso_location.basename()
+                try:
+                    full_iso_location.link(symlink_iso)
+                except FileExistsError: pass
+                iso_location = symlink_iso.replace(mountpoint, "", 1)
             # Création du Loopback
             print(iso_location, loopback_location, mountpoint, sep=" : ")
             temporary = False
             if loopback_content:
-                full_loopback_location = path(mountpoint) / loopback_location[1:] # On vire toujours le premier /
+                full_loopback_location = mountpoint / loopback_location[1:] # On vire toujours le premier /
                 full_loopback_location.write_text(loopback_content)
+                if " " in loopback_location:
+                    # Création d'un lien pour le loopback
+                    symlink_loopback = mountpoint / loopback_location.basename()
+                    try:
+                        full_loopback_location.link(symlink_loopback)
+                    except FileExistsError: pass
+                    loopback_location = symlink_loopback.replace(mountpoint, "", 1)
             # Création d'une ligne du Custom
             if permanent:
                 if loopback_content:
