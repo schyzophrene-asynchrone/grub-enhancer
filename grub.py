@@ -156,7 +156,7 @@ class GrubList(QDialog):
             self.add_item(dir)
         elif dir:
             error = QMessageBox(self)
-            msg = "Ce répertoire n'est pas un répertoire GRUB valide !"
+            msg = "{} n'est pas un répertoire GRUB valide !".format(dir)
             error.setText(msg)
             error.setWindowTitle("Répertoire non valide")
             error.exec_()
@@ -172,14 +172,18 @@ class GrubList(QDialog):
     
     @pyqtSlot(list)
     def add_items(self, items):
-        self.grub_list.clear()
         for item in items:
-            self.grub_list.addItem(item)
+            self.add_item(item)
         self.grub_list.setCurrentRow(0)
     
     @pyqtSlot(str)
     def add_item(self, dir):
-        item = QListWidgetItem(dir, self.grub_list)
+        item = None
+        for i in range(self.grub_list.count()):
+            if self.grub_list.item(i).text() == dir:
+                item = self.grub_list.item(i)
+        if not item:
+            item = QListWidgetItem(dir, self.grub_list)
         self.grub_list.setCurrentItem(item)
     
     @pyqtSlot()
