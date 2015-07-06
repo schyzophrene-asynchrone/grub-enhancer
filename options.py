@@ -4,8 +4,8 @@
 import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QFrame, QApplication,
-                             QLabel, QCheckBox, 
-                             QRadioButton, QVBoxLayout)
+                             QLabel, QCheckBox,
+                             QVBoxLayout)
 
 class Options(QFrame):
     """Classe représentant les options de configuration de GRUB"""
