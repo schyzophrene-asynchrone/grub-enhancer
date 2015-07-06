@@ -42,8 +42,9 @@ class CustomEntry(QListWidgetItem):
             self.setForeground(brush)
     
     def setIsoLocation(self, isoLocation):
-        self.isoLocation = isoLocation
-        self.setText(basename(isoLocation))
+        if self.text() != "<New>" and isoLocation != "/":
+            self.isoLocation = isoLocation
+            self.setText(basename(isoLocation))
     
     def setPermanent(self, permanent):
         self.permanent = permanent

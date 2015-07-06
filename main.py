@@ -157,6 +157,8 @@ class MainWindow(QMainWindow):
         for entry in entries:
             # Récupération des paramètres
             name = entry.text()
+            if name == "<New>":
+                continue
             iso_location = path(entry.getIsoLocation())
             print(iso_location)
             loopback_content = entry.getLoopbackContent()
