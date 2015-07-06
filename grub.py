@@ -6,12 +6,13 @@ import subprocess
 from os.path import expanduser
 import path # Pour la fonction find
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
-from PyQt5.QtWidgets import (QFrame, QApplication,
+from PyQt5.QtWidgets import (QDialog, QApplication,
                              QLabel, QListWidget,
                              QPushButton, QVBoxLayout,
                              QHBoxLayout, QAbstractItemView,
                              QFileDialog, QMessageBox,
-                             QProgressDialog, QListWidgetItem)
+                             QListWidgetItem,
+                             QDialogButtonBox, QProgressBar)
 
 #TODO Rajouter une progressbar plus précise ?
 def find(rep, pattern):
@@ -25,16 +26,6 @@ def find(rep, pattern):
             except (PermissionError, FileNotFoundError): pass
     return result
 
-class GrubRep(object):
-    def __init__(self, path):
-        self.path = path
-    
-    def setPath(self, path):
-        self.path = path
-    
-    def getPath(self):
-        return self.path
-
 class Scanner(QThread):
     """Classe scannant le système de fichier pour trouver
     un pattern donné lors de l'instanciation"""
@@ -42,6 +33,7 @@ class Scanner(QThread):
     value_changed = pyqtSignal(int)
     max_changed = pyqtSignal(int)
     found_rep = pyqtSignal(list)
+    dir_scanned = pyqtSignal(str)
     
     def __init__(self, rep, pattern):
         QThread.__init__(self)
@@ -57,30 +49,34 @@ class Scanner(QThread):
         self.max_changed.emit(len(rep.dirs()))
         self.value_changed.emit(value)
         rep = path.Path(rep)
+        self.dir_scanned.emit(rep)
         result = list()
         result[:0] = rep.glob(self.pattern)
         for file in rep.dirs():
             value += 1
             self.value_changed.emit(value)
+            self.dir_scanned.emit(rep / file)
             if not (rep / file).islink():
                 try : 
                     result[:0] = find(rep / file, self.pattern)
                 except (PermissionError, FileNotFoundError): pass
         return result
 
-class GrubList(QFrame):
+class GrubList(QDialog):
     """Classe représentant la liste des répertoires GRUB"""
     
     scanner = Scanner("/", "*/grub/grub.cfg")
-    newCurrentItem = pyqtSignal(GrubRep)
+    newCurrentItem = pyqtSignal(str)
     
-    def __init__(self, parent=None):
-        QFrame.__init__(self, parent)
+    def __init__(self, parent=None, text="Choisissez un répertoire GRUB", allowNone=True):
+        QDialog.__init__(self, parent)
         
         # Création des éléments
-        # Label
-        label = QLabel("Liste des répertoires GRUB")
+        # Labels
+        label = QLabel(text)
         label.setAlignment(Qt.AlignHCenter)
+        self.scanText = QLabel("No scan running")
+        self.scanText.setAlignment(Qt.AlignHCenter)
         # List View
         self.grub_list = QListWidget()
         self.grub_list.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -90,6 +86,15 @@ class GrubList(QFrame):
         self.scanButton.clicked.connect(self.scan)
         self.add.clicked.connect(self.openSelectionDialog)
         self.scanButton.setToolTip("Cette opération peut être <b>très</b> longue !")
+        if allowNone:
+            self.buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+            self.buttonBox.rejected.connect(self.reject)
+        else:
+            self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
+        self.buttonBox.accepted.connect(self.accept)
+        # Progressbar
+        self.progressbar = QProgressBar()
+        self.progressbar.setEnabled(False)
         
         # Création des Layouts
         # Horizontal
@@ -101,6 +106,9 @@ class GrubList(QFrame):
         vbox.addWidget(label)
         vbox.addWidget(self.grub_list)
         vbox.addLayout(hbox)
+        vbox.addWidget(self.scanText)
+        vbox.addWidget(self.progressbar)
+        vbox.addWidget(self.buttonBox)
         
         # Affichage de l'interface
         self.setLayout(vbox)
@@ -109,11 +117,22 @@ class GrubList(QFrame):
         self.scanner.found_rep.connect(self.add_items)
         self.scanner.started.connect(self._scan_started)
         self.scanner.finished.connect(self._scan_finished)
-        self.grub_list.currentItemChanged.connect(self.currentItemChanged)
+        self.scanner.max_changed.connect(self.progressbar.setMaximum)
+        self.scanner.value_changed.connect(self.progressbar.setValue)
+        self.scanner.dir_scanned.connect(self._setScanText)
         
         # Ajout de /boot/grub s'il existe
         if path.Path("/boot/grub/grub.cfg").exists():
             self.add_item("/boot/grub")
+    
+    def selectGrubRep(self):
+        self.setModal(True)
+        result = self.exec_()
+        if result == QDialog.Accepted:
+            grubRep = self.getGrubRep()
+            return grubRep
+        else:
+            return False
     
     def scan(self):
         warning = QMessageBox(self)
@@ -135,9 +154,9 @@ class GrubList(QFrame):
                                                expanduser('~'))
         if (path.Path(dir) / "grub.cfg").exists():
             self.add_item(dir)
-        else:
+        elif dir:
             error = QMessageBox(self)
-            msg = "Ce répertoire n'est pas un répertoire GRUB valide !"
+            msg = "{} n'est pas un répertoire GRUB valide !".format(dir)
             error.setText(msg)
             error.setWindowTitle("Répertoire non valide")
             error.exec_()
@@ -153,33 +172,38 @@ class GrubList(QFrame):
     
     @pyqtSlot(list)
     def add_items(self, items):
-        self.grub_list.clear()
         for item in items:
-            self.grub_list.addItem(item)
+            self.add_item(item)
         self.grub_list.setCurrentRow(0)
     
     @pyqtSlot(str)
     def add_item(self, dir):
-        item = QListWidgetItem(dir, self.grub_list)
+        item = None
+        for i in range(self.grub_list.count()):
+            if self.grub_list.item(i).text() == dir:
+                item = self.grub_list.item(i)
+        if not item:
+            item = QListWidgetItem(dir, self.grub_list)
         self.grub_list.setCurrentItem(item)
     
     @pyqtSlot()
     def _scan_started(self):
+        self.progressbar.setEnabled(True)
+        self.progressbar.setMinimum(0)
         self.scanButton.setEnabled(False)
         self.add.setEnabled(False)
     
     @pyqtSlot()
     def _scan_finished(self):
+        self.progressbar.reset()
+        self.progressbar.setEnabled(False)
+        self.scanText.setText("No scan running")
         self.scanButton.setEnabled(True)
         self.add.setEnabled(True)
     
-    @pyqtSlot(QListWidgetItem, QListWidgetItem)
-    def currentItemChanged(self, current, previous):
-        if current == None:
-            grubRep = GrubRep(None)
-        else:
-            grubRep = GrubRep(current.text())
-        self.newCurrentItem.emit(grubRep)
+    @pyqtSlot(str)
+    def _setScanText(self, text):
+        self.scanText.setText("Scanning {}...".format(text))
 
 if __name__ == "__main__":
     
@@ -187,6 +211,6 @@ if __name__ == "__main__":
     
     win = GrubList()
     win.setWindowTitle("Grub List")
-    win.show()
+    grubDir = win.selectGrubRep()
     
-    app.exec_()
+    print(grubDir)

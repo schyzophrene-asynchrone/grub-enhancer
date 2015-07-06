@@ -6,8 +6,6 @@ import sys
 import os
 import subprocess
 
-from os.path import basename, exists, join
-
 # Modules tiers
 from path import path
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
@@ -200,6 +198,16 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         app = QApplication(sys.argv)
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-d', '--directory', default="/boot/grub", help="Le répertoire GRUB à utiliser")
+        
+        args = parser.parse_args()
+        grubDir = args.directory
+        
+        if not (path(grubDir) / "grub.cfg").exists():
+            choices = GrubList(text="{} ne semble pas être un répertoire GRUB.\nVeuillez en choisir un autre.".format(args.directory), allowNone=False)
+            choices.setWindowTitle("Liste des répertoires GRUB")
+            grubDir = choices.selectGrubRep()
         
         filesystem = subprocess.check_output(["grub-probe", "--target=fs", "/boot/grub"]).decode().split()[0]
         disque = subprocess.check_output(["grub-probe", "--target=disk", "/boot/grub"]).decode().split()[0]
@@ -209,9 +217,9 @@ if __name__ == "__main__":
         forbiddenDeviceName = ("/dev/mapper", "/dev/dm", "/dev/md")
         
         if filesystem in forbiddenFilesystem or disque.startswith(forbiddenDeviceName):
-            window = MainWindow(allowTemp=False)
+            window = MainWindow(grubDir=grubDir, allowTemp=False)
         else:
-            window = MainWindow()
+            window = MainWindow(grubDir=grubDir)
         
         window.show()
         sys.exit(app.exec_())
