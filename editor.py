@@ -31,9 +31,11 @@ class LoopbackGenerator(QDialog):
         # Création des éléments
         # Labels
         label_top = QLabel("Si votre ISO est l'une de ces distributions, vous pouvez\n"
-                           "générer le fichier loopback selon un modèle prédéfini")
+                           "générer le fichier loopback selon un modèle prédéfini :")
         label_bottom = QLabel("Sinon, vous pouvez tenter de générer le fichier loopback\n"
-                              "à partir de l'iso, mais les risques de réussite sont minces...")
+                              "à partir de l'iso, mais les chances de réussite sont minces...")
+        label_top.setAlignment(Qt.AlignHCenter)
+        label_bottom.setAlignment(Qt.AlignHCenter)
         # Boutons
         self.radioButtons = [QRadioButton("Générer à partir de l'ISO"),
                              QRadioButton("Ubuntu"), QRadioButton("Kubuntu"),
@@ -43,6 +45,7 @@ class LoopbackGenerator(QDialog):
                         self.radioButtons[1] : "ubuntu", self.radioButtons[2] : "kubuntu",
                         self.radioButtons[3] : "xubuntu", self.radioButtons[4] : "lubuntu",
                         self.radioButtons[5] : "handylinux", self.radioButtons[6] : "bodhilinux"}
+        self.radioButtons[0].setChecked(True)
         
         buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
         buttonBox.rejected.connect(self.reject)
