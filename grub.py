@@ -87,11 +87,11 @@ class GrubList(QDialog):
         self.add.clicked.connect(self.openSelectionDialog)
         self.scanButton.setToolTip("Cette opération peut être <b>très</b> longue !")
         if allowNone:
-            self.buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
-            self.buttonBox.rejected.connect(self.reject)
+            buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+            buttonBox.rejected.connect(self.reject)
         else:
-            self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
-        self.buttonBox.accepted.connect(self.accept)
+            buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
+        buttonBox.accepted.connect(self.accept)
         # Progressbar
         self.progressbar = QProgressBar()
         self.progressbar.setEnabled(False)
@@ -108,7 +108,7 @@ class GrubList(QDialog):
         vbox.addLayout(hbox)
         vbox.addWidget(self.scanText)
         vbox.addWidget(self.progressbar)
-        vbox.addWidget(self.buttonBox)
+        vbox.addWidget(buttonBox)
         
         # Affichage de l'interface
         self.setLayout(vbox)
