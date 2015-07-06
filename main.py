@@ -212,7 +212,7 @@ class MainWindow(QMainWindow):
         choices = GrubList(parent=self)
         grubDir = choices.selectGrubRep()
         if grubDir:
-            self.grubDir = grubDir
+            self.grubDir = path(grubDir)
             self.loadGrubDir()
 
 if __name__ == "__main__":
