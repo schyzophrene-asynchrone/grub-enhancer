@@ -2,3 +2,4 @@
 - Disable iso if partition is not mounted (DONE)
 - Use grub.cfg for loopback generation if loopback.cfg doesn't exists (DONE)
 - For enabled custom items use foreground color instead of black (for dark theme) (DONE) DOESNT WORK
+- Create symlink if there are spaces in the path
