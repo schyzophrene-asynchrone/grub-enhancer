@@ -42,7 +42,7 @@ class CustomEntry(QListWidgetItem):
             self.setForeground(brush)
     
     def setIsoLocation(self, isoLocation):
-        if self.text() != "<New>" and isoLocation != "/":
+        if not (self.text() == "<New>" and isoLocation == ""):
             self.isoLocation = isoLocation
             self.setText(basename(isoLocation))
     
