@@ -40,11 +40,13 @@ class LoopbackGenerator(QDialog):
         self.radioButtons = [QRadioButton("Générer à partir de l'ISO"),
                              QRadioButton("Ubuntu"), QRadioButton("Kubuntu"),
                              QRadioButton("Xubuntu"), QRadioButton("Lubuntu"),
-                             QRadioButton("HandyLinux"), QRadioButton("Bodhi Linux")]
+                             QRadioButton("HandyLinux"), QRadioButton("Bodhi Linux"),
+                             QRadioButton("Slitaz")]
         self.options = {self.radioButtons[0] : "iso",
                         self.radioButtons[1] : "ubuntu", self.radioButtons[2] : "kubuntu",
                         self.radioButtons[3] : "xubuntu", self.radioButtons[4] : "lubuntu",
-                        self.radioButtons[5] : "handylinux", self.radioButtons[6] : "bodhilinux"}
+                        self.radioButtons[5] : "handylinux", self.radioButtons[6] : "bodhilinux",
+                        self.radioButtons[7] : "slitaz"}
         self.radioButtons[0].setChecked(True)
         
         buttonBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
