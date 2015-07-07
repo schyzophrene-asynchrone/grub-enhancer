@@ -56,14 +56,12 @@ class LoopbackGenerator(QDialog):
         # Création des Layouts
         # Buttons Left
         button_left = QVBoxLayout()
-        button_left.addWidget(self.radioButtons[1])
-        button_left.addWidget(self.radioButtons[3])
-        button_left.addWidget(self.radioButtons[5])
+        for i in range(1, 8, 2):
+            button_left.addWidget(self.radioButtons[i])
         # Buttons Righ
         button_right = QVBoxLayout()
-        button_right.addWidget(self.radioButtons[2])
-        button_right.addWidget(self.radioButtons[4])
-        button_right.addWidget(self.radioButtons[6])
+        for i in range(2, 7, 2):
+            button_right.addWidget(self.radioButtons[i])
         # Buttons Middle
         buttons = QHBoxLayout()
         buttons.addLayout(button_left)
