@@ -195,13 +195,23 @@ class MainWindow(QMainWindow):
                     custom_line = '\tsubmenu "' + name + '" {iso_boot "' + iso_location + '"} #' + mountpoint + '\n'
             else:
                 if loopback_content:
-                    custom_line = 'amorce_iso "{}" "{}" #{}\n'.format(iso, loopback, mountpoint)
+                    custom_line = 'amorce_iso "{}" "{}" #{}\n'.format(iso_location, loopback_location, mountpoint)
                 else:
-                    custom_line = 'amorce_iso "{}" #{}\n'.format(iso, mountpoint)
+                    custom_line = 'amorce_iso "{}" #{}\n'.format(iso_location, mountpoint)
                 temporary = True
             custom_content.append(custom_line)
         # Création du Custom
         custom.write_lines(custom_content)
+        # Mise à jour de l'environement de GRUB
+        if temporary:
+            question = QMessageBox(self)
+            question.setText("Votre configuration contient une entrée temporaire.")
+            question.setInformativeText("Voulez-vous l'activer ?") 
+            question.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            question.setDefaultButton(QMessageBox.Yes)
+            answer = question.exec_()
+            if answer == QMessageBox.Yes:
+                subprocess.call(["grub-editenv", self.grubDir / "grubenv", "set", "amorceiso=true"])
         # Affichage d'un message de confirmation
         msg = "Vos modifications ont bien été prises en compte."
         info = QMessageBox(self)
@@ -221,9 +231,9 @@ class MainWindow(QMainWindow):
         disque = subprocess.check_output(["grub-probe", "--target=disk", self.grubDir]).decode().split()[0]
         
         if filesystem in forbiddenFilesystem or disque.startswith(forbiddenDeviceName):
-            self.options.setEnabled(False)
+            self.options.disablePerm()
         else:
-            self.options.setEnabled(True)
+            self.options.enablePerm()
     
     @pyqtSlot()
     def chooseAnotherGrubDir(self):

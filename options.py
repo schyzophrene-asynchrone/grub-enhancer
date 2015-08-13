@@ -44,8 +44,7 @@ class Options(QFrame):
         """Renvoie l'état du boutton "permanent" """
         return self.permanent
     
-    def disablePerm(self, state):
-        self.permanentCB.setCheckState(state)
+    def disablePerm(self):
         self.permanentCB.setDisabled(True)
     
     def enablePerm(self):
