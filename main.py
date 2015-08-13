@@ -154,6 +154,7 @@ class MainWindow(QMainWindow):
         # Création des Loopback et du Custom
         custom = self.grubDir / "custom.cfg"
         custom_content = [self.customIncipit]
+        temporary = False
         for entry in entries:
             # Récupération des paramètres
             name = entry.text()
@@ -176,7 +177,6 @@ class MainWindow(QMainWindow):
                 iso_location = symlink_iso.replace(mountpoint, "", 1)
             # Création du Loopback
             print(iso_location, loopback_location, mountpoint, sep=" : ")
-            temporary = False
             if loopback_content:
                 full_loopback_location = mountpoint / loopback_location[1:] # On vire toujours le premier /
                 full_loopback_location.write_text(loopback_content)
